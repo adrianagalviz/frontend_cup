@@ -1,19 +1,22 @@
 import { NavLink } from 'react-router-dom'
-import { BookOpen, CalendarDays, ClipboardList, FileText, Home, Users } from 'lucide-react'
+import { BookOpen, CalendarDays, ClipboardList, FileText, Home, User, Users } from 'lucide-react'
 
 const menuPorRol = {
   administrador: [
     { to: '/admin/dashboard', label: 'Dashboard', icon: Home },
+    { to: '/admin/perfil', label: 'Perfil', icon: User },
     { to: '/admin/postulantes', label: 'Postulantes', icon: Users },
     { to: '/admin/reportes', label: 'Reportes', icon: FileText },
   ],
   docente: [
     { to: '/docente/dashboard', label: 'Dashboard', icon: Home },
+    { to: '/docente/perfil', label: 'Perfil', icon: User },
     { to: '/docente/horarios', label: 'Horarios', icon: CalendarDays },
     { to: '/docente/asistencias', label: 'Asistencias', icon: ClipboardList },
   ],
   alumno: [
     { to: '/alumno/dashboard', label: 'Dashboard', icon: Home },
+    { to: '/alumno/perfil', label: 'Perfil', icon: User },
     { to: '/alumno/horarios', label: 'Horarios', icon: CalendarDays },
     { to: '/alumno/examenes', label: 'Examenes', icon: BookOpen },
   ],
@@ -46,4 +49,3 @@ export default function Sidebar({ rol = 'administrador', abierto = false, onCerr
     </>
   )
 }
-

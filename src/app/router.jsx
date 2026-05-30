@@ -12,6 +12,7 @@ import DashboardDocente from '../modules/dashboard/pages/DashboardDocente'
 import Login from '../modules/auth/pages/Login'
 import PagoCancelado from '../modules/pagos/pages/PagoCancelado'
 import PagoExitoso from '../modules/pagos/pages/PagoExitoso'
+import PerfilAutenticado from '../modules/perfil/pages/PerfilAutenticado'
 import RegistroPostulante from '../modules/postulantes/pages/RegistroPostulante'
 import VistaPendiente from '../modules/shared/pages/VistaPendiente'
 
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/admin/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardAdministrador /> },
+      { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'postulantes', element: <VistaPendiente titulo="Postulantes" descripcion="Modulo administrativo definido para listar, validar y convertir postulantes." /> },
       { path: 'reportes', element: <VistaPendiente titulo="Reportes" descripcion="Modulo administrativo definido para reportes, PDF, Excel y comandos de voz." /> },
     ],
@@ -58,6 +60,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/docente/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardDocente /> },
+      { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'horarios', element: <VistaPendiente titulo="Horarios docente" descripcion="Ruta definida para la carga horaria del docente autenticado." /> },
       { path: 'asistencias', element: <VistaPendiente titulo="Asistencias docente" descripcion="Ruta definida para entrada, salida y asistencia de alumnos." /> },
     ],
@@ -74,6 +77,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/alumno/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardAlumno /> },
+      { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'horarios', element: <VistaPendiente titulo="Horarios alumno" descripcion="Ruta definida para horarios segun el grupo del alumno." /> },
       { path: 'examenes', element: <VistaPendiente titulo="Examenes alumno" descripcion="Ruta definida para examenes habilitados, respuestas y notas." /> },
     ],

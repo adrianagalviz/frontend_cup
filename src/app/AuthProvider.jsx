@@ -1,14 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { AuthContext } from '../hooks/authContext'
-import { cerrarSesion, loginAlumno, loginTradicional, obtenerPerfil } from '../services/auth.service'
+import { cerrarSesion, loginAlumno, loginFirebase, loginTradicional, obtenerPerfil } from '../services/auth.service'
+import { cerrarSesionFirebase } from '../lib/firebase'
 import { limpiarSesionGuardada, guardarToken, guardarUsuario, obtenerToken, obtenerUsuarioGuardado } from '../lib/storage'
 
+function transformarPerfil(respuesta) {
+  const datos = respuesta?.datos || respuesta
+
+  return datos?.usuario
+    ? {
+        ...datos.usuario,
+        rol: datos.rol?.nombre || datos.usuario?.rol,
+        persona: datos.persona || datos.usuario?.persona,
+        datos_rol: datos.datos_rol,
+      }
+    : null
+}
+
 export default function AuthProvider({ children }) {
+  const queryClient = useQueryClient()
   const [usuario, setUsuario] = useState(() => obtenerUsuarioGuardado())
   const [token, setToken] = useState(() => obtenerToken())
   const [validandoSesion, setValidandoSesion] = useState(Boolean(obtenerToken()))
 
-  const aplicarSesion = useCallback((respuesta) => {
+  const aplicarSesion = useCallback(async (respuesta) => {
     const datos = respuesta?.datos || respuesta
     const nuevoToken = datos?.token
     const nuevoUsuario = datos?.usuario
@@ -18,12 +34,25 @@ export default function AuthProvider({ children }) {
       setToken(nuevoToken)
     }
 
-    if (nuevoUsuario) {
-      guardarUsuario(nuevoUsuario)
-      setUsuario(nuevoUsuario)
+    let usuarioSesion = nuevoUsuario
+
+    if (nuevoToken) {
+      try {
+        usuarioSesion = transformarPerfil(await obtenerPerfil()) || nuevoUsuario
+      } catch {
+        usuarioSesion = nuevoUsuario
+      }
     }
 
-    return datos
+    if (usuarioSesion) {
+      guardarUsuario(usuarioSesion)
+      setUsuario(usuarioSesion)
+    }
+
+    return {
+      ...datos,
+      usuario: usuarioSesion,
+    }
   }, [])
 
   const iniciarSesion = useCallback(async (payload) => {
@@ -36,17 +65,14 @@ export default function AuthProvider({ children }) {
     return aplicarSesion(respuesta)
   }, [aplicarSesion])
 
+  const iniciarSesionFirebase = useCallback(async (firebaseToken) => {
+    const respuesta = await loginFirebase({ firebase_token: firebaseToken })
+    return aplicarSesion(respuesta)
+  }, [aplicarSesion])
+
   const refrescarPerfil = useCallback(async () => {
     const respuesta = await obtenerPerfil()
-    const datos = respuesta?.datos || respuesta
-    const perfil = datos?.usuario
-      ? {
-          ...datos.usuario,
-          rol: datos.rol?.nombre,
-          persona: datos.persona,
-          datos_rol: datos.datos_rol,
-        }
-      : null
+    const perfil = transformarPerfil(respuesta)
 
     if (perfil) {
       guardarUsuario(perfil)
@@ -60,11 +86,13 @@ export default function AuthProvider({ children }) {
     try {
       if (token) await cerrarSesion()
     } finally {
+      await cerrarSesionFirebase()
+      queryClient.clear()
       limpiarSesionGuardada()
       setUsuario(null)
       setToken(null)
     }
-  }, [token])
+  }, [queryClient, token])
 
   useEffect(() => {
     if (!token) return
@@ -73,15 +101,7 @@ export default function AuthProvider({ children }) {
 
     obtenerPerfil()
       .then((respuesta) => {
-        const datos = respuesta?.datos || respuesta
-        const perfil = datos?.usuario
-          ? {
-              ...datos.usuario,
-              rol: datos.rol?.nombre,
-              persona: datos.persona,
-              datos_rol: datos.datos_rol,
-            }
-          : null
+        const perfil = transformarPerfil(respuesta)
 
         if (activo && perfil) {
           guardarUsuario(perfil)
@@ -111,10 +131,10 @@ export default function AuthProvider({ children }) {
     validandoSesion,
     iniciarSesion,
     iniciarSesionAlumno,
+    iniciarSesionFirebase,
     refrescarPerfil,
     salir,
-  }), [iniciarSesion, iniciarSesionAlumno, refrescarPerfil, salir, token, usuario, validandoSesion])
+  }), [iniciarSesion, iniciarSesionAlumno, iniciarSesionFirebase, refrescarPerfil, salir, token, usuario, validandoSesion])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

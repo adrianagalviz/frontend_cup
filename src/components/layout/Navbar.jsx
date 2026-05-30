@@ -1,9 +1,16 @@
 import { LogOut, Menu } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import Boton from '../common/Boton'
 import { useAuth } from '../../hooks/useAuth'
 
 export default function Navbar({ onAbrirMenu }) {
+  const navigate = useNavigate()
   const { usuario, salir } = useAuth()
+
+  async function cerrarSesion() {
+    await salir()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
@@ -20,7 +27,7 @@ export default function Navbar({ onAbrirMenu }) {
           <p className="text-sm font-semibold text-slate-950">CUP-FICCT</p>
           <p className="text-xs text-slate-500">{usuario?.persona?.nombres || usuario?.nombre_usuario || 'Usuario autenticado'}</p>
         </div>
-        <Boton variante="secundario" onClick={salir}>
+        <Boton variante="secundario" onClick={cerrarSesion}>
           <LogOut className="h-4 w-4" />
           Salir
         </Boton>
@@ -28,4 +35,3 @@ export default function Navbar({ onAbrirMenu }) {
     </header>
   )
 }
-

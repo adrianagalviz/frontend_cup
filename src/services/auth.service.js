@@ -1,27 +1,21 @@
-import { api } from '../lib/api'
+import { get, post } from '../lib/api'
 
 export async function loginTradicional(payload) {
-  const { data } = await api.post('/auth/login', payload)
-  return data
+  return post('/auth/login', payload)
 }
 
 export async function loginAlumno(payload) {
-  const { data } = await api.post('/auth/alumno/login', payload)
-  return data
+  return post('/auth/alumno/login', payload)
 }
 
 export async function loginFirebase(payload) {
-  const { data } = await api.post('/auth/firebase', payload)
-  return data
+  return post('/auth/firebase', payload)
 }
 
 export async function obtenerPerfil() {
-  const { data } = await api.get('/auth/perfil')
-  return data
+  return get('/auth/perfil')
 }
 
 export async function cerrarSesion() {
-  const { data } = await api.post('/auth/logout')
-  return data
+  return post('/auth/logout')
 }
-

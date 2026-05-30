@@ -3,3 +3,6 @@ export const firebaseConfig = {
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
 }
 
+export function firebaseConfigurado() {
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain)
+}
