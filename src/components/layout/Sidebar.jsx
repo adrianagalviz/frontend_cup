@@ -1,12 +1,41 @@
 import { NavLink } from 'react-router-dom'
-import { BookOpen, CalendarDays, ClipboardList, FileText, Home, User, Users } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarDays,
+  ClipboardCheck,
+  ClipboardList,
+  CreditCard,
+  FileSpreadsheet,
+  FileText,
+  GraduationCap,
+  Home,
+  Landmark,
+  LayoutGrid,
+  School,
+  User,
+  UserCog,
+  Users,
+} from 'lucide-react'
 
 const menuPorRol = {
   administrador: [
     { to: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { to: '/admin/perfil', label: 'Perfil', icon: User },
+    { to: '/admin/usuarios', label: 'Usuarios', icon: UserCog },
     { to: '/admin/postulantes', label: 'Postulantes', icon: Users },
+    { to: '/admin/requisitos', label: 'Requisitos', icon: ClipboardCheck },
+    { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
+    { to: '/admin/alumnos', label: 'Alumnos', icon: GraduationCap },
+    { to: '/admin/gestion-academica', label: 'Gestion academica', icon: Landmark },
+    { to: '/admin/docentes', label: 'Docentes', icon: School },
+    { to: '/admin/horarios', label: 'Horarios', icon: CalendarDays },
+    { to: '/admin/asignaciones', label: 'Asignaciones', icon: LayoutGrid },
+    { to: '/admin/asistencias', label: 'Asistencias', icon: ClipboardList },
+    { to: '/admin/examenes', label: 'Examenes', icon: BookOpen },
+    { to: '/admin/notas', label: 'Notas', icon: FileSpreadsheet },
+    { to: '/admin/admision', label: 'Admision final', icon: GraduationCap },
     { to: '/admin/reportes', label: 'Reportes', icon: FileText },
+    { to: '/admin/carga-masiva', label: 'Carga masiva', icon: FileSpreadsheet },
   ],
   docente: [
     { to: '/docente/dashboard', label: 'Dashboard', icon: Home },

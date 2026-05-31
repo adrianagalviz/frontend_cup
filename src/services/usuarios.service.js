@@ -1,7 +1,10 @@
-import { get, patch, post, put } from '../lib/api'
+import { api, extraerDatos, get, patch, post, put } from '../lib/api'
 
 export function listarUsuarios(params) {
-  return get('/usuarios', { params })
+  return api.get('/usuarios', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
 }
 
 export function crearAdministrador(payload) {
@@ -19,4 +22,3 @@ export function editarUsuario(id, payload) {
 export function cambiarEstadoUsuario(id, payload) {
   return patch(`/usuarios/${id}/estado`, payload)
 }
-

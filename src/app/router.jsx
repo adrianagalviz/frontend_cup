@@ -13,8 +13,12 @@ import Login from '../modules/auth/pages/Login'
 import PagoCancelado from '../modules/pagos/pages/PagoCancelado'
 import PagoExitoso from '../modules/pagos/pages/PagoExitoso'
 import PerfilAutenticado from '../modules/perfil/pages/PerfilAutenticado'
+import DetallePostulante from '../modules/postulantes/pages/DetallePostulante'
+import EditarPostulante from '../modules/postulantes/pages/EditarPostulante'
+import ListarPostulantes from '../modules/postulantes/pages/ListarPostulantes'
 import RegistroPostulante from '../modules/postulantes/pages/RegistroPostulante'
 import VistaPendiente from '../modules/shared/pages/VistaPendiente'
+import ListarUsuarios from '../modules/usuarios/pages/ListarUsuarios'
 
 const router = createBrowserRouter([
   {
@@ -44,8 +48,24 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/admin/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardAdministrador /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
-      { path: 'postulantes', element: <VistaPendiente titulo="Postulantes" descripcion="Modulo administrativo definido para listar, validar y convertir postulantes." /> },
+      { path: 'usuarios', element: <ListarUsuarios /> },
+      { path: 'postulantes/registro', element: <RegistroPostulante /> },
+      { path: 'postulantes', element: <ListarPostulantes /> },
+      { path: 'postulantes/:id', element: <DetallePostulante /> },
+      { path: 'postulantes/:id/editar', element: <EditarPostulante /> },
+      { path: 'requisitos', element: <VistaPendiente titulo="Requisitos" descripcion="Modulo administrativo definido para revisar documentos y validar requisitos." /> },
+      { path: 'pagos', element: <VistaPendiente titulo="Pagos" descripcion="Modulo administrativo definido para consultar Stripe y validar pagos." /> },
+      { path: 'alumnos', element: <VistaPendiente titulo="Alumnos" descripcion="Modulo administrativo definido para consultar alumnos y codigos automaticos." /> },
+      { path: 'gestion-academica', element: <VistaPendiente titulo="Gestion academica" descripcion="Modulo administrativo definido para gestiones, carreras y cupos." /> },
+      { path: 'docentes', element: <VistaPendiente titulo="Docentes" descripcion="Modulo administrativo definido para registrar, listar, editar y desactivar docentes." /> },
+      { path: 'horarios', element: <VistaPendiente titulo="Horarios" descripcion="Modulo administrativo definido para dias, turnos, periodos, aulas, grupos y horarios." /> },
+      { path: 'asignaciones', element: <VistaPendiente titulo="Asignaciones" descripcion="Modulo administrativo definido para asignar docentes a materias y grupos." /> },
+      { path: 'asistencias', element: <VistaPendiente titulo="Asistencias" descripcion="Modulo administrativo definido para asistencia docente y asistencia de alumnos." /> },
+      { path: 'examenes', element: <VistaPendiente titulo="Examenes" descripcion="Modulo administrativo definido para examenes, preguntas y opciones." /> },
+      { path: 'notas', element: <VistaPendiente titulo="Notas y promedios" descripcion="Modulo administrativo definido para notas, promedios y estado final." /> },
+      { path: 'admision', element: <VistaPendiente titulo="Admision final" descripcion="Modulo administrativo definido para asignacion final de carrera por mayor nota y cupos." /> },
       { path: 'reportes', element: <VistaPendiente titulo="Reportes" descripcion="Modulo administrativo definido para reportes, PDF, Excel y comandos de voz." /> },
+      { path: 'carga-masiva', element: <VistaPendiente titulo="Carga masiva" descripcion="Modulo administrativo definido para archivos Excel o CSV." /> },
     ],
   },
   {
