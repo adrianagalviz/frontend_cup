@@ -1,7 +1,10 @@
-import { get, post, put } from '../lib/api'
+import { api, extraerDatos, post, put } from '../lib/api'
 
 export function listarAulas(params) {
-  return get('/aulas', { params })
+  return api.get('/aulas', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
 }
 
 export function crearAula(payload) {
@@ -11,4 +14,3 @@ export function crearAula(payload) {
 export function editarAula(id, payload) {
   return put(`/aulas/${id}`, payload)
 }
-

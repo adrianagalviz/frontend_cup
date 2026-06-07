@@ -5,8 +5,7 @@ import { toast } from 'sonner'
 import Loader from '../../../components/common/Loader'
 import MensajeError from '../../../components/common/MensajeError'
 import Breadcrumb from '../../../components/layout/Breadcrumb'
-import { listarCarreras } from '../../../services/carreras.service'
-import { listarGestiones } from '../../../services/gestionAcademica.service'
+import { listarCarrerasActivas } from '../../../services/carreras.service'
 import { editarPostulante, subirTituloBachiller, verPostulante } from '../../../services/postulantes.service'
 import { obtenerMensajeError } from '../../../lib/errores'
 import FormularioPostulante from '../components/FormularioPostulante'
@@ -22,11 +21,7 @@ export default function EditarPostulante() {
   })
   const carrerasQuery = useQuery({
     queryKey: ['postulantes', 'carreras'],
-    queryFn: () => listarCarreras({ activa: 'true', por_pagina: 100 }),
-  })
-  const gestionesQuery = useQuery({
-    queryKey: ['postulantes', 'gestiones'],
-    queryFn: () => listarGestiones({ activa: 'true', por_pagina: 100 }),
+    queryFn: () => listarCarrerasActivas({ por_pagina: 100 }),
   })
 
   const editarMutation = useMutation({
@@ -57,7 +52,6 @@ export default function EditarPostulante() {
         <FormularioPostulante
           postulante={postulanteQuery.data?.postulante}
           carreras={carrerasQuery.data || []}
-          gestiones={gestionesQuery.data || []}
           onGuardar={(datos) => editarMutation.mutateAsync(datos)}
           onCancelar={() => navigate(`/admin/postulantes/${id}`)}
           cargando={editarMutation.isPending}

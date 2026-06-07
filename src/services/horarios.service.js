@@ -1,19 +1,29 @@
-import { get, post } from '../lib/api'
+import { api, extraerDatos, get, post, put } from '../lib/api'
 
 export function listarDias(params) {
   return get('/dias', { params })
 }
 
 export function listarTurnos(params) {
-  return get('/turnos', { params })
+  return api.get('/turnos', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
 }
 
 export function crearTurno(payload) {
   return post('/turnos', payload)
 }
 
+export function editarTurno(id, payload) {
+  return put(`/turnos/${id}`, payload)
+}
+
 export function listarPeriodos(params) {
-  return get('/periodos', { params })
+  return api.get('/periodos', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
 }
 
 export function crearPeriodo(payload) {
@@ -21,10 +31,20 @@ export function crearPeriodo(payload) {
 }
 
 export function listarHorarios(params) {
-  return get('/horarios', { params })
+  return api.get('/horarios', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
 }
 
 export function crearHorario(payload) {
   return post('/horarios', payload)
 }
 
+export function listarHorariosDocente(docenteId, params) {
+  return get(`/horarios/docente/${docenteId}`, { params })
+}
+
+export function listarHorariosAlumno(alumnoId, params) {
+  return get(`/horarios/alumno/${alumnoId}`, { params })
+}

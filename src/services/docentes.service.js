@@ -1,7 +1,10 @@
-import { destroy, get, post, put } from '../lib/api'
+import { api, destroy, extraerDatos, get, post, put } from '../lib/api'
 
 export function listarDocentes(params) {
-  return get('/docentes', { params })
+  return api.get('/docentes', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
 }
 
 export function crearDocente(payload) {
@@ -27,4 +30,3 @@ export function eliminarDocente(id) {
 export function listarHorariosDocente(docenteId, params) {
   return get(`/horarios/docente/${docenteId}`, { params })
 }
-

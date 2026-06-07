@@ -1,4 +1,4 @@
-import { get, post } from '../lib/api'
+import { get, patch, post } from '../lib/api'
 
 export function listarGestiones(params) {
   return get('/gestiones', { params })
@@ -12,3 +12,6 @@ export function obtenerGestionActual() {
   return get('/gestiones/actual')
 }
 
+export function activarGestionGlobal(id) {
+  return patch(`/gestiones/${id}/activar`)
+}

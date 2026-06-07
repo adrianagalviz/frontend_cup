@@ -74,8 +74,13 @@ const valoresIniciales = {
   titulo_bachiller: undefined,
 }
 
-function valoresDesdePostulante(postulante) {
-  if (!postulante) return valoresIniciales
+function valoresDesdePostulante(postulante, gestionActual) {
+  if (!postulante) {
+    return {
+      ...valoresIniciales,
+      gestion_academica_id: gestionActual?.id ? String(gestionActual.id) : '',
+    }
+  }
 
   return {
     cedula_identidad: postulante.persona?.cedula_identidad || postulante.cedula_identidad || '',
@@ -126,7 +131,7 @@ function normalizarPayload(values) {
 export default function FormularioPostulante({
   postulante,
   carreras = [],
-  gestiones = [],
+  gestionActual,
   onGuardar,
   onCancelar,
   cargando = false,
@@ -141,12 +146,12 @@ export default function FormularioPostulante({
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: valoresDesdePostulante(postulante),
+    defaultValues: valoresDesdePostulante(postulante, gestionActual),
   })
 
   useEffect(() => {
-    reset(valoresDesdePostulante(postulante))
-  }, [postulante, reset])
+    reset(valoresDesdePostulante(postulante, gestionActual))
+  }, [gestionActual, postulante, reset])
 
   async function enviar(values) {
     try {
@@ -174,17 +179,22 @@ export default function FormularioPostulante({
         <CampoTexto label="Correo electronico" name="correo" type="email" register={register} error={errors.correo} requerido />
         <CampoTexto label="Ciudad" name="ciudad" register={register} error={errors.ciudad} requerido />
         <CampoTexto label="Colegio de procedencia" name="colegio_procedencia" register={register} error={errors.colegio_procedencia} requerido />
-        <CampoSelect label="Gestion academica" name="gestion_academica_id" register={register} error={errors.gestion_academica_id}>
-          <option value="">Gestion activa del backend</option>
-          {gestiones.map((gestion) => <option key={gestion.id} value={gestion.id}>{gestion.nombre}</option>)}
-        </CampoSelect>
+        <input type="hidden" {...register('gestion_academica_id')} />
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+          <p className="text-xs font-medium uppercase text-slate-500">Gestion academica</p>
+          <p className="mt-1 text-sm font-semibold text-slate-900">
+            {postulante?.gestion_academica?.nombre || gestionActual?.nombre || 'Gestion global no configurada'}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Se asigna automaticamente segun la gestion global definida por administracion.</p>
+          {errors.gestion_academica_id ? <span className="mt-1 block text-xs text-red-600">{errors.gestion_academica_id.message}</span> : null}
+        </div>
         <CampoSelect label="Primera opcion de carrera" name="primera_carrera_id" register={register} error={errors.primera_carrera_id} requerido>
           <option value="">Seleccionar carrera</option>
-          {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.nombre}</option>)}
+          {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.codigo ? `${carrera.codigo} - ${carrera.nombre}` : carrera.nombre}</option>)}
         </CampoSelect>
         <CampoSelect label="Segunda opcion de carrera" name="segunda_carrera_id" register={register} error={errors.segunda_carrera_id} requerido>
           <option value="">Seleccionar carrera</option>
-          {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.nombre}</option>)}
+          {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.codigo ? `${carrera.codigo} - ${carrera.nombre}` : carrera.nombre}</option>)}
         </CampoSelect>
         <div className="md:col-span-2">
           <CampoArchivo label="Titulo de bachiller como imagen" name="titulo_bachiller" register={register} error={errors.titulo_bachiller} requerido={requiereArchivo} accept="image/jpeg,image/png,image/webp" />

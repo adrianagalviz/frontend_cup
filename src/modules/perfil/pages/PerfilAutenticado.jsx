@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { Copy } from 'lucide-react'
+import { toast } from 'sonner'
 import BadgeEstado from '../../../components/common/BadgeEstado'
+import Boton from '../../../components/common/Boton'
 import Loader from '../../../components/common/Loader'
 import MensajeError from '../../../components/common/MensajeError'
 import Breadcrumb from '../../../components/layout/Breadcrumb'
@@ -47,7 +50,7 @@ function DatosRol({ usuario }) {
   if (rol === 'alumno') {
     return (
       <>
-        <FilaDato etiqueta="Codigo de alumno" valor={alumno?.codigo_alumno || usuario?.codigo_acceso} />
+        <CodigoAlumno codigo={alumno?.codigo_alumno || usuario?.codigo_acceso} />
         <FilaDato etiqueta="Estado academico" valor={alumno?.estado_academico} />
         <FilaDato etiqueta="Gestion academica" valor={alumno?.gestion_academica_id} />
       </>
@@ -55,6 +58,29 @@ function DatosRol({ usuario }) {
   }
 
   return null
+}
+
+function CodigoAlumno({ codigo }) {
+  if (!codigo) return null
+
+  async function copiar() {
+    await navigator.clipboard.writeText(codigo)
+    toast.success('Codigo de alumno copiado.')
+  }
+
+  return (
+    <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Codigo de alumno</dt>
+      <dd className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <code className="rounded-md bg-white px-3 py-2 text-lg font-bold text-slate-950 ring-1 ring-emerald-200">{codigo}</code>
+        <Boton variante="secundario" onClick={copiar}>
+          <Copy className="h-4 w-4" />
+          Copiar
+        </Boton>
+      </dd>
+      <p className="mt-2 text-sm text-emerald-700">Este codigo sirve para iniciar sesion como alumno.</p>
+    </div>
+  )
 }
 
 export default function PerfilAutenticado() {
@@ -114,4 +140,3 @@ export default function PerfilAutenticado() {
     </div>
   )
 }
-
