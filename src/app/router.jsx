@@ -4,18 +4,25 @@ import AlumnoLayout from '../components/layout/AlumnoLayout'
 import AuthLayout from '../components/layout/AuthLayout'
 import DocenteLayout from '../components/layout/DocenteLayout'
 import { RedireccionPorRol, RutaPorRol, RutaProtegida } from '../components/layout/RutasProtegidas'
+import AdmisionFinal from '../modules/admision/pages/AdmisionFinal'
+import AsistenciaAlumnos from '../modules/asistencia-alumnos/pages/AsistenciaAlumnos'
+import AsistenciaDocente from '../modules/asistencia-docente/pages/AsistenciaDocente'
 import GestionAsignaciones from '../modules/asignaciones/pages/GestionAsignaciones'
 import AccesoDenegado from '../modules/shared/pages/AccesoDenegado'
 import NoEncontrado from '../modules/shared/pages/NoEncontrado'
 import DashboardAdministrador from '../modules/dashboard/pages/DashboardAdministrador'
 import DashboardAlumno from '../modules/dashboard/pages/DashboardAlumno'
 import DashboardDocente from '../modules/dashboard/pages/DashboardDocente'
+import CargaMasiva from '../modules/carga-masiva/pages/CargaMasiva'
 import CatalogosAcademicos from '../modules/catalogos-academicos/pages/CatalogosAcademicos'
 import ListarDocentes from '../modules/docentes/pages/ListarDocentes'
+import ExamenesAlumno from '../modules/examenes-alumno/pages/ExamenesAlumno'
+import GestionExamenes from '../modules/examenes/pages/GestionExamenes'
 import GestionAcademica from '../modules/gestion-academica/pages/GestionAcademica'
 import HorariosPorRol from '../modules/horarios/pages/HorariosPorRol'
 import Login from '../modules/auth/pages/Login'
 import ListarPagos from '../modules/pagos/pages/ListarPagos'
+import NotasPromedios from '../modules/notas/pages/NotasPromedios'
 import PagoCancelado from '../modules/pagos/pages/PagoCancelado'
 import PagoExitoso from '../modules/pagos/pages/PagoExitoso'
 import PagoPostulante from '../modules/pagos/pages/PagoPostulante'
@@ -24,6 +31,7 @@ import DetallePostulante from '../modules/postulantes/pages/DetallePostulante'
 import EditarPostulante from '../modules/postulantes/pages/EditarPostulante'
 import ListarPostulantes from '../modules/postulantes/pages/ListarPostulantes'
 import RegistroPostulante from '../modules/postulantes/pages/RegistroPostulante'
+import ReportesAdministrativos from '../modules/reportes/pages/ReportesAdministrativos'
 import VistaPendiente from '../modules/shared/pages/VistaPendiente'
 import ListarUsuarios from '../modules/usuarios/pages/ListarUsuarios'
 
@@ -68,12 +76,13 @@ const router = createBrowserRouter([
       { path: 'docentes', element: <ListarDocentes /> },
       { path: 'horarios', element: <CatalogosAcademicos /> },
       { path: 'asignaciones', element: <GestionAsignaciones /> },
-      { path: 'asistencias', element: <VistaPendiente titulo="Asistencias" descripcion="Modulo administrativo definido para asistencia docente y asistencia de alumnos." /> },
-      { path: 'examenes', element: <VistaPendiente titulo="Examenes" descripcion="Modulo administrativo definido para examenes, preguntas y opciones." /> },
-      { path: 'notas', element: <VistaPendiente titulo="Notas y promedios" descripcion="Modulo administrativo definido para notas, promedios y estado final." /> },
-      { path: 'admision', element: <VistaPendiente titulo="Admision final" descripcion="Modulo administrativo definido para asignacion final de carrera por mayor nota y cupos." /> },
-      { path: 'reportes', element: <VistaPendiente titulo="Reportes" descripcion="Modulo administrativo definido para reportes, PDF, Excel y comandos de voz." /> },
-      { path: 'carga-masiva', element: <VistaPendiente titulo="Carga masiva" descripcion="Modulo administrativo definido para archivos Excel o CSV." /> },
+      { path: 'asistencias', element: <AsistenciaDocente modo="admin" /> },
+      { path: 'asistencias-alumnos', element: <AsistenciaAlumnos modo="admin" /> },
+      { path: 'examenes', element: <GestionExamenes /> },
+      { path: 'notas', element: <NotasPromedios modo="admin" /> },
+      { path: 'admision', element: <AdmisionFinal /> },
+      { path: 'reportes', element: <ReportesAdministrativos /> },
+      { path: 'carga-masiva', element: <CargaMasiva /> },
     ],
   },
   {
@@ -90,7 +99,8 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <DashboardDocente /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'horarios', element: <HorariosPorRol rol="docente" /> },
-      { path: 'asistencias', element: <VistaPendiente titulo="Asistencias docente" descripcion="Ruta definida para entrada, salida y asistencia de alumnos." /> },
+      { path: 'asistencias', element: <AsistenciaDocente modo="docente" /> },
+      { path: 'asistencia-alumnos', element: <AsistenciaAlumnos modo="docente" /> },
     ],
   },
   {
@@ -107,7 +117,9 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <DashboardAlumno /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'horarios', element: <HorariosPorRol rol="alumno" /> },
-      { path: 'examenes', element: <VistaPendiente titulo="Examenes alumno" descripcion="Ruta definida para examenes habilitados, respuestas y notas." /> },
+      { path: 'asistencias', element: <AsistenciaAlumnos modo="alumno" /> },
+      { path: 'examenes', element: <ExamenesAlumno /> },
+      { path: 'notas', element: <NotasPromedios modo="alumno" /> },
     ],
   },
   { path: '/acceso-denegado', element: <AccesoDenegado /> },

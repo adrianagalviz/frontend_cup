@@ -20,7 +20,7 @@ export default function Boton({
     <button
       type={type}
       disabled={disabled || cargando}
-      className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${variantes[variante] || variantes.primario} ${className}`}
+      className={`inline-flex min-h-10 max-w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${variantes[variante] || variantes.primario} ${className}`}
       {...props}
     >
       {cargando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -28,4 +28,3 @@ export default function Boton({
     </button>
   )
 }
-

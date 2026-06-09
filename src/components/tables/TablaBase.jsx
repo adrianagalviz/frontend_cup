@@ -24,13 +24,13 @@ export default function TablaBase({
 
   return (
     <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className="min-w-[760px] divide-y divide-slate-200 text-sm lg:min-w-full">
           <thead className="bg-slate-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th key={header.id} className="px-4 py-3 text-left font-semibold text-slate-700">
+                  <th key={header.id} className="px-3 py-3 text-left font-semibold text-slate-700 sm:px-4">
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
@@ -41,8 +41,10 @@ export default function TablaBase({
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 text-slate-700">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  <td key={cell.id} className="max-w-80 px-3 py-3 align-top text-slate-700 sm:px-4">
+                    <div className="min-w-0 overflow-hidden text-ellipsis">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
                   </td>
                 ))}
               </tr>

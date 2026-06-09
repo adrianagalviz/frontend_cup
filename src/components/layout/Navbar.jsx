@@ -14,8 +14,8 @@ export default function Navbar({ sidebarContraido = false, onAbrirMenu, onAltern
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex min-h-16 items-center justify-between gap-4 px-4 lg:px-6">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-h-16 items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4 lg:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <button
             type="button"
             className="rounded-md p-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 lg:hidden"
@@ -33,12 +33,12 @@ export default function Navbar({ sidebarContraido = false, onAbrirMenu, onAltern
           >
             {sidebarContraido ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
           </button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-950">CUP-FICCT</p>
             <p className="truncate text-xs text-slate-500">{usuario?.persona?.nombres || usuario?.nombre_usuario || 'Usuario autenticado'}</p>
           </div>
         </div>
-        <Boton variante="secundario" onClick={cerrarSesion}>
+        <Boton variante="secundario" onClick={cerrarSesion} className="shrink-0 px-3 sm:px-4">
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Salir</span>
         </Boton>

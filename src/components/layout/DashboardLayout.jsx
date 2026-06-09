@@ -12,7 +12,7 @@ export default function DashboardLayout({ rol }) {
   const rolActual = rol || obtenerRolUsuario(usuario)
 
   return (
-    <div className="min-h-screen bg-slate-100 lg:flex">
+    <div className="min-h-dvh bg-slate-100 lg:flex">
       <Sidebar
         rol={rolActual}
         abierto={menuAbierto}
@@ -26,9 +26,9 @@ export default function DashboardLayout({ rol }) {
           onAbrirMenu={() => setMenuAbierto(true)}
           onAlternarSidebar={() => setSidebarContraido((valor) => !valor)}
         />
-        <div className="p-4 lg:p-6">
+        <main className="mx-auto w-full max-w-[1600px] p-3 sm:p-4 lg:p-6">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   )

@@ -51,7 +51,8 @@ const menuPorRol = {
     {
       modulo: 'Seguimiento',
       items: [
-        { to: '/admin/asistencias', label: 'Asistencias', icon: ClipboardList },
+        { to: '/admin/asistencias', label: 'Asist. docentes', icon: ClipboardList },
+        { to: '/admin/asistencias-alumnos', label: 'Asist. alumnos', icon: ClipboardCheck },
         { to: '/admin/examenes', label: 'Examenes', icon: BookOpen },
         { to: '/admin/notas', label: 'Notas', icon: FileSpreadsheet },
         { to: '/admin/admision', label: 'Admision final', icon: GraduationCap },
@@ -77,7 +78,8 @@ const menuPorRol = {
       modulo: 'Docencia',
       items: [
         { to: '/docente/horarios', label: 'Horarios', icon: CalendarDays },
-        { to: '/docente/asistencias', label: 'Asistencias', icon: ClipboardList },
+        { to: '/docente/asistencias', label: 'Mi asistencia', icon: ClipboardList },
+        { to: '/docente/asistencia-alumnos', label: 'Asist. alumnos', icon: ClipboardCheck },
       ],
     },
   ],
@@ -93,7 +95,9 @@ const menuPorRol = {
       modulo: 'Curso',
       items: [
         { to: '/alumno/horarios', label: 'Horarios', icon: CalendarDays },
+        { to: '/alumno/asistencias', label: 'Asistencias', icon: ClipboardCheck },
         { to: '/alumno/examenes', label: 'Examenes', icon: BookOpen },
+        { to: '/alumno/notas', label: 'Notas', icon: FileSpreadsheet },
       ],
     },
   ],

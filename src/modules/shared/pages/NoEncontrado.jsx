@@ -1,17 +1,19 @@
-import { Link } from 'react-router-dom'
-import Boton from '../../../components/common/Boton'
+import { useNavigate } from 'react-router-dom'
+import EstadoSistema from '../../../components/common/EstadoSistema'
 
 export default function NoEncontrado() {
+  const navigate = useNavigate()
+
   return (
     <main className="grid min-h-screen place-items-center bg-slate-100 p-4">
-      <section className="max-w-md rounded-md border border-slate-200 bg-white p-6 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-950">Ruta no encontrada</h1>
-        <p className="mt-2 text-sm text-slate-600">La pantalla solicitada no existe en la configuracion actual.</p>
-        <Link to="/" className="mt-5 inline-flex">
-          <Boton>Ir al inicio</Boton>
-        </Link>
-      </section>
+      <EstadoSistema
+        tipo="vacio"
+        titulo="Ruta no encontrada"
+        descripcion="La pantalla solicitada no existe en la configuracion actual."
+        accion="Ir al inicio"
+        onAccion={() => navigate('/')}
+        className="w-full max-w-md"
+      />
     </main>
   )
 }
-

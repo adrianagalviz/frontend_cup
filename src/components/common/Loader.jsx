@@ -1,11 +1,5 @@
-import { Loader2 } from 'lucide-react'
+import EstadoSistema from './EstadoSistema'
 
 export default function Loader({ texto = 'Cargando...' }) {
-  return (
-    <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-600">
-      <Loader2 className="h-5 w-5 animate-spin" />
-      <span>{texto}</span>
-    </div>
-  )
+  return <EstadoSistema tipo="cargando" titulo={texto} className="border-0 bg-transparent shadow-none" />
 }
-
