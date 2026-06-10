@@ -2,7 +2,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import Boton from '../../../components/common/Boton'
@@ -117,6 +117,12 @@ export default function Login() {
         <h2 className="text-xl font-bold text-slate-950">Iniciar sesion</h2>
         <p className="mt-1 text-sm text-slate-500">Acceso para administrador, docente o alumno.</p>
       </div>
+      <Link
+        to="/postulantes/registro"
+        className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-center text-sm font-semibold text-sky-800 transition hover:border-sky-300 hover:bg-sky-100"
+      >
+        Registrarme como postulante
+      </Link>
       {mensajeError ? <MensajeError mensaje={mensajeError} /> : null}
       <input type="hidden" {...register('tipo_login')} />
       <div className="grid grid-cols-2 gap-2 rounded-md bg-slate-100 p-1">

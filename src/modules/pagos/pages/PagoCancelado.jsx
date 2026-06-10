@@ -13,7 +13,7 @@ export default function PagoCancelado() {
           <XCircle className="h-5 w-5" />
           Pago cancelado o no completado
         </div>
-        <p className="mt-1 text-sm">El frontend consulta el estado real al backend antes de permitir reintentar.</p>
+        <p className="mt-1 text-sm">El frontend consulta el estado real al backend antes de permitir registrar el pago temporal.</p>
       </div>
       <EstadoPagoPostulante postulanteId={postulanteId} titulo="Estado despues del retorno" />
     </div>

@@ -1,4 +1,4 @@
-import { api, extraerDatos, get, post, put } from '../lib/api'
+import { api, destroy, extraerDatos, get, post, put } from '../lib/api'
 
 export function listarDias(params) {
   return get('/dias', { params })
@@ -17,6 +17,10 @@ export function crearTurno(payload) {
 
 export function editarTurno(id, payload) {
   return put(`/turnos/${id}`, payload)
+}
+
+export function eliminarTurno(id) {
+  return destroy(`/turnos/${id}`)
 }
 
 export function listarPeriodos(params) {

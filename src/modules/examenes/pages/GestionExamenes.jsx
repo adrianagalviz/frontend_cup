@@ -61,6 +61,21 @@ function preguntasDeExamen(examen) {
   return examen?.preguntas || []
 }
 
+function puntajeAutomaticoEstimado(examen, materiaId) {
+  const materia = materiasDeExamen(examen).find((item) => Number(item.materia_id) === Number(materiaId))
+  const preguntasActuales = preguntasDeExamen(examen).filter((pregunta) => Number(pregunta.materia?.id) === Number(materiaId) && pregunta.activa).length
+  const totalPreguntas = preguntasActuales + 1
+
+  if (!materia || totalPreguntas < 1) return null
+
+  return {
+    materia: materia.materia,
+    porcentaje: Number(materia.porcentaje || 0),
+    totalPreguntas,
+    valor: Math.round((Number(materia.porcentaje || 0) / totalPreguntas) * 100) / 100,
+  }
+}
+
 function FormularioExamen({ gestiones, onGuardar, onCancelar, cargando }) {
   const [form, setForm] = useState(valoresExamen)
   const [error, setError] = useState('')
@@ -192,9 +207,10 @@ function FormularioPorcentajes({ examen, materias, onGuardar, onCancelar, cargan
 
 function FormularioPregunta({ examen, onGuardar, onCancelar, cargando }) {
   const materias = materiasDeExamen(examen)
-  const [form, setForm] = useState({ materia_id: materias[0]?.materia_id ? String(materias[0].materia_id) : '', enunciado: '', puntaje: '1' })
+  const [form, setForm] = useState({ materia_id: materias[0]?.materia_id ? String(materias[0].materia_id) : '', enunciado: '' })
   const [opciones, setOpciones] = useState(opcionesIniciales)
   const [error, setError] = useState('')
+  const puntajeEstimado = puntajeAutomaticoEstimado(examen, form.materia_id)
 
   function actualizarOpcion(indice, valor) {
     setOpciones((actuales) => actuales.map((opcion, actualIndice) => actualIndice === indice ? { ...opcion, texto_opcion: valor } : opcion))
@@ -230,7 +246,6 @@ function FormularioPregunta({ examen, onGuardar, onCancelar, cargando }) {
       pregunta: {
         materia_id: Number(form.materia_id),
         enunciado: form.enunciado.trim(),
-        puntaje: Number(form.puntaje || 1),
         activa: true,
       },
       opciones: opcionesValidas,
@@ -251,10 +266,16 @@ function FormularioPregunta({ examen, onGuardar, onCancelar, cargando }) {
         Enunciado
         <Textarea value={form.enunciado} onChange={(evento) => setForm((actual) => ({ ...actual, enunciado: evento.target.value }))} rows={4} />
       </label>
-      <label className="grid gap-1 text-sm font-medium text-slate-700">
-        Puntaje
-        <Input type="number" min="0.01" max="100" step="0.01" value={form.puntaje} onChange={(evento) => setForm((actual) => ({ ...actual, puntaje: evento.target.value }))} />
-      </label>
+      <div className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+        <p className="font-semibold">Puntaje automatico</p>
+        {puntajeEstimado ? (
+          <p className="mt-1">
+            {puntajeEstimado.materia}: {puntajeEstimado.porcentaje}% dividido entre {puntajeEstimado.totalPreguntas} pregunta(s) activas = {puntajeEstimado.valor}% por pregunta aprox.
+          </p>
+        ) : (
+          <p className="mt-1">Selecciona una materia asociada al examen para estimar el puntaje.</p>
+        )}
+      </div>
       <div className="grid gap-3">
         <p className="text-sm font-semibold text-slate-950">Opciones de respuesta</p>
         {opciones.map((opcion, indice) => (
@@ -317,7 +338,7 @@ function DetalleExamen({ examen }) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="font-semibold text-slate-950">{pregunta.enunciado}</p>
-                  <p className="text-xs text-slate-500">{pregunta.materia?.nombre} | {pregunta.tipo_pregunta} | Puntaje {pregunta.puntaje}</p>
+                  <p className="text-xs text-slate-500">{pregunta.materia?.nombre} | {pregunta.tipo_pregunta} | Ponderacion automatica {pregunta.puntaje}%</p>
                 </div>
                 <BadgeEstado estado={pregunta.activa ? 'activo' : 'inactivo'} />
               </div>

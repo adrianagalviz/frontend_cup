@@ -19,6 +19,10 @@ export function consultarEstadoPagoPublico(postulanteId) {
   return get(`/pagos/postulante/${postulanteId}/estado-publico`)
 }
 
+export function registrarPagoTemporalPostulante(postulanteId) {
+  return post(`/pagos/postulante/${postulanteId}/pago-temporal`)
+}
+
 export function validarPagoAdmin(pagoId, payload) {
   return patch(`/pagos/${pagoId}/validar-admin`, payload)
 }

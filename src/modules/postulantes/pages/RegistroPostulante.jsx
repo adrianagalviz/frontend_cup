@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { CreditCard, FileCheck2, UserRoundPlus } from 'lucide-react'
 import MensajeError from '../../../components/common/MensajeError'
 import { listarCarrerasActivas } from '../../../services/carreras.service'
 import { obtenerGestionActual } from '../../../services/gestionAcademica.service'
@@ -9,6 +11,7 @@ import { obtenerMensajeError } from '../../../lib/errores'
 import FormularioPostulante from '../components/FormularioPostulante'
 
 export default function RegistroPostulante() {
+  const navigate = useNavigate()
   const [mensaje, setMensaje] = useState('')
   const [documentoTitulo, setDocumentoTitulo] = useState(null)
   const [cargando, setCargando] = useState(false)
@@ -38,7 +41,8 @@ export default function RegistroPostulante() {
       }
 
       toast.success('Postulante registrado correctamente.')
-      setMensaje('Registro completado. El administrador revisara los requisitos y el pago segun el flujo definido.')
+      setMensaje('Registro completado. Seras redirigido al pago de postulacion.')
+      if (postulanteId) navigate(`/pagos/postulante/${postulanteId}`, { replace: true })
     } catch (error) {
       setMensaje(obtenerMensajeError(error))
       throw error
@@ -49,9 +53,28 @@ export default function RegistroPostulante() {
 
   return (
     <div className="grid gap-5">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-950">Registro de postulante</h1>
-        <p className="mt-1 text-sm text-slate-600">Formulario conectado al backend Laravel para el registro CUP-FICCT.</p>
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div>
+          <p className="text-sm font-semibold uppercase text-sky-800">Postulacion CUP-FICCT</p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-950">Registro de postulante</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Completa tus datos personales, selecciona tus carreras y sube tu titulo de bachiller. Al finalizar pasaras al pago de postulacion.
+          </p>
+        </div>
+        <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-3 lg:w-[520px]">
+          <div className="flex items-center gap-2">
+            <UserRoundPlus className="h-4 w-4 text-sky-700" />
+            <span className="font-medium text-slate-700">Registro</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-sky-700" />
+            <span className="font-medium text-slate-700">Pago</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FileCheck2 className="h-4 w-4 text-sky-700" />
+            <span className="font-medium text-slate-700">Revision admin</span>
+          </div>
+        </div>
       </div>
       {mensaje ? <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{mensaje}</div> : null}
       {documentoTitulo?.cloudinary_url ? (
@@ -68,13 +91,15 @@ export default function RegistroPostulante() {
       ) : null}
       {carrerasQuery.error ? <MensajeError mensaje="No se pudieron cargar las carreras desde el backend. El registro requiere carreras reales." /> : null}
       {gestionActualQuery.error ? <MensajeError mensaje="No se pudo cargar la gestion academica global. El administrador debe definir una gestion activa." /> : null}
-      <FormularioPostulante
-        carreras={carrerasQuery.data || []}
-        gestionActual={gestionActualQuery.data?.gestion}
-        onGuardar={guardar}
-        cargando={cargando || gestionActualQuery.isLoading}
-        requiereArchivo
-      />
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <FormularioPostulante
+          carreras={carrerasQuery.data || []}
+          gestionActual={gestionActualQuery.data?.gestion}
+          onGuardar={guardar}
+          cargando={cargando || gestionActualQuery.isLoading}
+          requiereArchivo
+        />
+      </section>
     </div>
   )
 }

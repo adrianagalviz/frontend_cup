@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, Eye, Plus, Power, PowerOff } from 'lucide-react'
+import { Edit, Eye, Plus, Power, PowerOff, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import AccionesTabla from '../../../components/tables/AccionesTabla'
@@ -18,7 +18,7 @@ import { crearAula, editarAula, listarAulas } from '../../../services/aulas.serv
 import { listarDocentes } from '../../../services/docentes.service'
 import { listarGestiones } from '../../../services/gestionAcademica.service'
 import { calcularGruposNecesarios, crearGrupo, desactivarGrupo, editarGrupo, listarAlumnosGrupo, listarGrupos } from '../../../services/grupos.service'
-import { crearHorario, crearPeriodo, crearTurno, editarTurno, listarDias, listarHorarios, listarPeriodos, listarTurnos } from '../../../services/horarios.service'
+import { crearHorario, crearPeriodo, crearTurno, editarTurno, eliminarTurno, listarDias, listarHorarios, listarPeriodos, listarTurnos } from '../../../services/horarios.service'
 import { listarMaterias } from '../../../services/materias.service'
 import { obtenerErroresValidacion, obtenerMensajeError } from '../../../lib/errores'
 
@@ -31,6 +31,9 @@ const tabs = [
   { id: 'periodos', label: 'Periodos' },
   { id: 'horarios', label: 'Horarios' },
 ]
+
+const DURACION_TURNO_MINUTOS = 360
+const DURACION_PERIODO_MINUTOS = 90
 
 const schemaGrupo = z.object({
   gestion_academica_id: z.string().min(1, 'La gestion academica es obligatoria.'),
@@ -49,6 +52,12 @@ const schemaTurno = z.object({
 }).refine((values) => values.hora_inicio < values.hora_fin, {
   path: ['hora_fin'],
   message: 'La hora de fin debe ser posterior a la hora de inicio.',
+}).refine((values) => {
+  const minutos = diferenciaMinutos(values.hora_inicio, values.hora_fin)
+  return minutos === DURACION_TURNO_MINUTOS
+}, {
+  path: ['hora_fin'],
+  message: 'El turno debe durar exactamente 6 horas y dividirse en 4 periodos de 90 minutos.',
 })
 
 const schemaPeriodo = z.object({
@@ -56,9 +65,9 @@ const schemaPeriodo = z.object({
   numero_periodo: z.coerce.number().min(1, 'El numero de periodo es obligatorio.'),
   hora_inicio: z.string().min(1, 'La hora de inicio es obligatoria.'),
   hora_fin: z.string().min(1, 'La hora de fin es obligatoria.'),
-}).refine((values) => diferenciaMinutos(values.hora_inicio, values.hora_fin) === 45, {
+}).refine((values) => diferenciaMinutos(values.hora_inicio, values.hora_fin) === DURACION_PERIODO_MINUTOS, {
   path: ['hora_fin'],
-  message: 'Cada periodo debe durar exactamente 45 minutos.',
+  message: 'Cada periodo debe durar exactamente 90 minutos.',
 })
 
 const schemaHorario = z.object({
@@ -91,6 +100,36 @@ function diferenciaMinutos(inicio, fin) {
   const [finHora, finMinuto] = fin.split(':').map(Number)
 
   return (finHora * 60 + finMinuto) - (inicioHora * 60 + inicioMinuto)
+}
+
+function minutosATiempo(totalMinutos) {
+  const horas = Math.floor(totalMinutos / 60).toString().padStart(2, '0')
+  const minutos = (totalMinutos % 60).toString().padStart(2, '0')
+
+  return `${horas}:${minutos}`
+}
+
+function tiempoAMinutos(valor) {
+  if (!valor) return 0
+
+  const [hora, minuto] = valor.split(':').map(Number)
+
+  return (hora * 60) + minuto
+}
+
+function generarVistaPreviaPeriodos(inicio, fin) {
+  const duracion = diferenciaMinutos(inicio, fin)
+
+  if (!inicio || !fin || duracion <= 0 || duracion % DURACION_PERIODO_MINUTOS !== 0) return []
+
+  const base = tiempoAMinutos(inicio)
+  const totalPeriodos = duracion / DURACION_PERIODO_MINUTOS
+
+  return Array.from({ length: totalPeriodos }, (_, index) => ({
+    numero: index + 1,
+    inicio: minutosATiempo(base + (index * DURACION_PERIODO_MINUTOS)),
+    fin: minutosATiempo(base + ((index + 1) * DURACION_PERIODO_MINUTOS)),
+  }))
 }
 
 function proximaClase(horarios = []) {
@@ -216,6 +255,9 @@ function FormularioTurno({ turno, onGuardar, onCancelar, cargando }) {
     hora_fin: turno?.hora_fin?.slice(0, 5) || '',
   })
   const [errores, setErrores] = useState({})
+  const duracion = diferenciaMinutos(form.hora_inicio, form.hora_fin)
+  const periodosPrevios = generarVistaPreviaPeriodos(form.hora_inicio, form.hora_fin)
+  const rangoValido = duracion === DURACION_TURNO_MINUTOS && periodosPrevios.length === 4
 
   async function enviar(event) {
     event.preventDefault()
@@ -241,21 +283,45 @@ function FormularioTurno({ turno, onGuardar, onCancelar, cargando }) {
         <Input value={form.nombre} error={errores.nombre} onChange={(event) => setForm((actual) => ({ ...actual, nombre: event.target.value }))} placeholder="Mañana" />
         {errores.nombre ? <span className="text-xs text-red-600">{errores.nombre}</span> : null}
       </label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="grid gap-1.5 text-sm font-medium text-slate-700">
-          <span>Hora inicio *</span>
-          <Input type="time" value={form.hora_inicio} error={errores.hora_inicio} onChange={(event) => setForm((actual) => ({ ...actual, hora_inicio: event.target.value }))} />
-          {errores.hora_inicio ? <span className="text-xs text-red-600">{errores.hora_inicio}</span> : null}
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium text-slate-700">
-          <span>Hora fin *</span>
-          <Input type="time" value={form.hora_fin} error={errores.hora_fin} onChange={(event) => setForm((actual) => ({ ...actual, hora_fin: event.target.value }))} />
-          {errores.hora_fin ? <span className="text-xs text-red-600">{errores.hora_fin}</span> : null}
-        </label>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+            <span>Hora inicio *</span>
+            <Input type="time" value={form.hora_inicio} error={errores.hora_inicio} onChange={(event) => setForm((actual) => ({ ...actual, hora_inicio: event.target.value }))} />
+            {errores.hora_inicio ? <span className="text-xs text-red-600">{errores.hora_inicio}</span> : null}
+          </label>
+          <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+            <span>Hora fin *</span>
+            <Input type="time" value={form.hora_fin} error={errores.hora_fin} onChange={(event) => setForm((actual) => ({ ...actual, hora_fin: event.target.value }))} />
+            {errores.hora_fin ? <span className="text-xs text-red-600">{errores.hora_fin}</span> : null}
+          </label>
+        </div>
+
+        <div className={`rounded-md border px-3 py-2 ${rangoValido ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+          <p className="text-xs font-medium uppercase">Resumen</p>
+          <p className="mt-1 text-sm font-semibold">{duracion > 0 ? `${duracion} minutos` : 'Sin rango'}</p>
+          <p className="mt-1 text-xs">{periodosPrevios.length || 0} periodos de 90 min</p>
+          <p className="text-xs">{rangoValido ? 'Turno valido de 6 horas' : 'Requiere 6 horas exactas'}</p>
+        </div>
+      </div>
+      <div className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+        <p>Al guardar el turno, el backend generara automaticamente 4 periodos de 90 minutos. Cada clase usara 1 periodo completo.</p>
+        {periodosPrevios.length ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {periodosPrevios.map((periodo) => (
+              <div key={periodo.numero} className="rounded-md border border-sky-100 bg-white px-3 py-2">
+                <p className="text-xs font-semibold text-sky-950">Periodo {periodo.numero}</p>
+                <p className="text-xs text-sky-700">{periodo.inicio} - {periodo.fin}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs">Selecciona un rango exacto de 6 horas para ver los 4 periodos de 90 minutos.</p>
+        )}
       </div>
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>
-        <Boton type="submit" cargando={cargando}>{turno ? 'Guardar cambios' : 'Crear turno'}</Boton>
+        <Boton type="submit" cargando={cargando} disabled={!rangoValido}>{turno ? 'Guardar cambios' : 'Crear turno'}</Boton>
       </div>
     </form>
   )
@@ -315,8 +381,8 @@ function FormularioPeriodo({ turnos = [], onGuardar, onCancelar, cargando }) {
           {errores.hora_fin ? <span className="text-xs text-red-600">{errores.hora_fin}</span> : null}
         </label>
       </div>
-      <div className={`rounded-md border px-3 py-2 text-sm ${duracion === 45 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-        Duracion calculada: {duracion > 0 ? duracion : '-'} minutos. Requerido: 45 minutos.
+      <div className={`rounded-md border px-3 py-2 text-sm ${duracion === DURACION_PERIODO_MINUTOS ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+        Duracion calculada: {duracion > 0 ? duracion : '-'} minutos. Requerido: 90 minutos.
       </div>
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>
@@ -339,7 +405,8 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
   })
   const [errores, setErrores] = useState({})
 
-  const periodosFiltrados = form.turno_id ? periodos.filter((periodo) => String(periodo.turno?.id) === String(form.turno_id)) : periodos
+  const periodosFiltrados = (form.turno_id ? periodos.filter((periodo) => String(periodo.turno?.id) === String(form.turno_id)) : periodos)
+    .filter((periodo) => Number(periodo.duracion_minutos || DURACION_PERIODO_MINUTOS) === DURACION_PERIODO_MINUTOS)
 
   async function enviar(event) {
     event.preventDefault()
@@ -377,6 +444,9 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
         <SelectForm label="Dia" value={form.dia_id} error={errores.dia_id} onChange={(value) => actualizar('dia_id', value)} options={dias.map((dia) => ({ value: dia.id, label: dia.nombre }))} />
         <SelectForm label="Turno" value={form.turno_id} error={errores.turno_id} onChange={(value) => actualizar('turno_id', value)} options={turnos.map((turno) => ({ value: turno.id, label: `${turno.nombre} (${turno.hora_inicio} - ${turno.hora_fin})` }))} />
         <SelectForm label="Periodo" value={form.periodo_id} error={errores.periodo_id} onChange={(value) => actualizar('periodo_id', value)} options={periodosFiltrados.map((periodo) => ({ value: periodo.id, label: `Periodo ${periodo.numero_periodo} (${periodo.hora_inicio} - ${periodo.hora_fin})` }))} />
+      </div>
+      <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+        Cada horario crea una clase de 90 minutos usando el periodo seleccionado.
       </div>
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>
@@ -460,6 +530,7 @@ export default function CatalogosAcademicos() {
   const [modalTurno, setModalTurno] = useState(false)
   const [turnoEditando, setTurnoEditando] = useState(null)
   const [turnoEstado, setTurnoEstado] = useState(null)
+  const [turnoEliminar, setTurnoEliminar] = useState(null)
   const [modalPeriodo, setModalPeriodo] = useState(false)
   const [modalHorario, setModalHorario] = useState(false)
   const [mensajeError, setMensajeError] = useState('')
@@ -645,6 +716,7 @@ export default function CatalogosAcademicos() {
       toast.success('Turno creado correctamente.')
       setModalTurno(false)
       queryClient.invalidateQueries({ queryKey: ['turnos'] })
+      queryClient.invalidateQueries({ queryKey: ['periodos'] })
     },
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
@@ -657,6 +729,19 @@ export default function CatalogosAcademicos() {
       setTurnoEditando(null)
       setTurnoEstado(null)
       queryClient.invalidateQueries({ queryKey: ['turnos'] })
+      queryClient.invalidateQueries({ queryKey: ['periodos'] })
+    },
+    onError: (error) => setMensajeError(obtenerMensajeError(error)),
+  })
+
+  const eliminarTurnoMutation = useMutation({
+    mutationFn: eliminarTurno,
+    onSuccess: () => {
+      toast.success('Turno eliminado correctamente.')
+      setTurnoEliminar(null)
+      queryClient.invalidateQueries({ queryKey: ['turnos'] })
+      queryClient.invalidateQueries({ queryKey: ['periodos'] })
+      queryClient.invalidateQueries({ queryKey: ['horarios'] })
     },
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
@@ -843,6 +928,9 @@ export default function CatalogosAcademicos() {
             <Boton variante={turno.activo ? 'peligro' : 'secundario'} className="min-h-9 px-3" title={turno.activo ? 'Desactivar turno' : 'Activar turno'} onClick={() => setTurnoEstado(turno)}>
               {turno.activo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
             </Boton>
+            <Boton variante="peligro" className="min-h-9 px-3" title="Eliminar turno" onClick={() => setTurnoEliminar(turno)}>
+              <Trash2 className="h-4 w-4" />
+            </Boton>
           </AccionesTabla>
         )
       },
@@ -865,7 +953,7 @@ export default function CatalogosAcademicos() {
     },
     {
       header: 'Duracion',
-      cell: ({ row }) => `${row.original.duracion_minutos || 45} min`,
+      cell: ({ row }) => `${row.original.duracion_minutos || DURACION_PERIODO_MINUTOS} min`,
     },
     {
       header: 'Estado',
@@ -959,6 +1047,12 @@ export default function CatalogosAcademicos() {
       id: turnoEstado.id,
       payload: { activo: !turnoEstado.activo },
     })
+  }
+
+  function confirmarEliminarTurno() {
+    if (!turnoEliminar?.id) return
+
+    eliminarTurnoMutation.mutate(turnoEliminar.id)
   }
 
   const totalPaginasGrupos = Number(metaGrupos.ultima_pagina || 1)
@@ -1107,7 +1201,7 @@ export default function CatalogosAcademicos() {
         <section className="grid gap-4">
           {diasQuery.error ? <MensajeError mensaje={obtenerMensajeError(diasQuery.error)} /> : null}
           <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-            Los dias se obtienen desde el backend y se usan en el formulario de horarios.
+            Los dias disponibles se obtienen desde el backend. Solo se programan clases de lunes a sabado.
           </div>
           <TablaBase columnas={columnasDias} datos={dias} cargando={diasQuery.isLoading} mensajeVacio="No existen dias registrados." />
         </section>
@@ -1161,13 +1255,16 @@ export default function CatalogosAcademicos() {
                 {turnos.map((turno) => <option key={turno.id} value={turno.id}>{turno.nombre}</option>)}
               </Select>
             </label>
-            <Boton onClick={() => {
+            <Boton variante="secundario" onClick={() => {
               setMensajeError('')
               setModalPeriodo(true)
             }}>
               <Plus className="h-4 w-4" />
-              Crear periodo
+              Crear periodo manual
             </Boton>
+          </div>
+          <div className="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+            Los periodos se generan automaticamente en bloques de 90 minutos al crear o ajustar un turno de 6 horas. Una clase ocupa 1 periodo completo.
           </div>
           <div>
             <TablaBase columnas={columnasPeriodos} datos={periodos} cargando={periodosQuery.isLoading} mensajeVacio="No existen periodos con los filtros seleccionados." />
@@ -1310,6 +1407,15 @@ export default function CatalogosAcademicos() {
         onCancelar={() => setTurnoEstado(null)}
         onConfirmar={cambiarEstadoTurno}
         cargando={editarTurnoMutation.isPending}
+      />
+
+      <ConfirmDialog
+        abierto={Boolean(turnoEliminar)}
+        titulo="Eliminar turno"
+        mensaje={`Confirma eliminar ${turnoEliminar?.nombre || 'este turno'}? Tambien se eliminaran sus periodos si no tiene horarios asignados.`}
+        onCancelar={() => setTurnoEliminar(null)}
+        onConfirmar={confirmarEliminarTurno}
+        cargando={eliminarTurnoMutation.isPending}
       />
     </div>
   )

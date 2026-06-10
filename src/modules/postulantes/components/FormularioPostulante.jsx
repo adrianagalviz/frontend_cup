@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { FileImage, GraduationCap, UserRound } from 'lucide-react'
 import Boton from '../../../components/common/Boton'
 import CampoArchivo from '../../../components/forms/CampoArchivo'
 import CampoFecha from '../../../components/forms/CampoFecha'
@@ -163,46 +164,69 @@ export default function FormularioPostulante({
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit(enviar)}>
-      <div className="grid gap-4 md:grid-cols-2">
-        <CampoTexto label="Cedula de identidad" name="cedula_identidad" register={register} error={errors.cedula_identidad} requerido />
-        <CampoTexto label="Nombres" name="nombres" register={register} error={errors.nombres} requerido />
-        <CampoTexto label="Apellido paterno" name="apellido_paterno" register={register} error={errors.apellido_paterno} requerido />
-        <CampoTexto label="Apellido materno" name="apellido_materno" register={register} error={errors.apellido_materno} requerido />
-        <CampoFecha label="Fecha de nacimiento" name="fecha_nacimiento" register={register} error={errors.fecha_nacimiento} requerido />
-        <CampoSelect label="Sexo" name="sexo" register={register} error={errors.sexo} requerido>
-          <option value="">Seleccionar</option>
-          <option value="femenino">Femenino</option>
-          <option value="masculino">Masculino</option>
-        </CampoSelect>
-        <CampoTexto label="Direccion" name="direccion" register={register} error={errors.direccion} requerido />
-        <CampoTexto label="Telefono" name="telefono" register={register} error={errors.telefono} requerido />
-        <CampoTexto label="Correo electronico" name="correo" type="email" register={register} error={errors.correo} requerido />
-        <CampoTexto label="Ciudad" name="ciudad" register={register} error={errors.ciudad} requerido />
-        <CampoTexto label="Colegio de procedencia" name="colegio_procedencia" register={register} error={errors.colegio_procedencia} requerido />
-        <input type="hidden" {...register('gestion_academica_id')} />
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs font-medium uppercase text-slate-500">Gestion academica</p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">
-            {postulante?.gestion_academica?.nombre || gestionActual?.nombre || 'Gestion global no configurada'}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">Se asigna automaticamente segun la gestion global definida por administracion.</p>
-          {errors.gestion_academica_id ? <span className="mt-1 block text-xs text-red-600">{errors.gestion_academica_id.message}</span> : null}
+      <section className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+        <div className="flex items-center gap-2">
+          <UserRound className="h-5 w-5 text-sky-700" />
+          <h2 className="text-base font-bold text-slate-950">Datos personales</h2>
         </div>
-        <CampoSelect label="Primera opcion de carrera" name="primera_carrera_id" register={register} error={errors.primera_carrera_id} requerido>
-          <option value="">Seleccionar carrera</option>
-          {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.codigo ? `${carrera.codigo} - ${carrera.nombre}` : carrera.nombre}</option>)}
-        </CampoSelect>
-        <CampoSelect label="Segunda opcion de carrera" name="segunda_carrera_id" register={register} error={errors.segunda_carrera_id} requerido>
-          <option value="">Seleccionar carrera</option>
-          {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.codigo ? `${carrera.codigo} - ${carrera.nombre}` : carrera.nombre}</option>)}
-        </CampoSelect>
-        <div className="md:col-span-2">
-          <CampoArchivo label="Titulo de bachiller como imagen" name="titulo_bachiller" register={register} error={errors.titulo_bachiller} requerido={requiereArchivo} accept="image/jpeg,image/png,image/webp" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <CampoTexto label="Cedula de identidad" name="cedula_identidad" register={register} error={errors.cedula_identidad} requerido />
+          <CampoTexto label="Nombres" name="nombres" register={register} error={errors.nombres} requerido />
+          <CampoTexto label="Apellido paterno" name="apellido_paterno" register={register} error={errors.apellido_paterno} requerido />
+          <CampoTexto label="Apellido materno" name="apellido_materno" register={register} error={errors.apellido_materno} requerido />
+          <CampoFecha label="Fecha de nacimiento" name="fecha_nacimiento" register={register} error={errors.fecha_nacimiento} requerido />
+          <CampoSelect label="Sexo" name="sexo" register={register} error={errors.sexo} requerido>
+            <option value="">Seleccionar</option>
+            <option value="femenino">Femenino</option>
+            <option value="masculino">Masculino</option>
+          </CampoSelect>
+          <CampoTexto label="Telefono" name="telefono" register={register} error={errors.telefono} requerido />
+          <CampoTexto label="Correo electronico" name="correo" type="email" register={register} error={errors.correo} requerido />
+          <CampoTexto label="Ciudad" name="ciudad" register={register} error={errors.ciudad} requerido />
+          <div className="md:col-span-2 xl:col-span-3">
+            <CampoTexto label="Direccion" name="direccion" register={register} error={errors.direccion} requerido />
+          </div>
         </div>
-      </div>
-      <div className="flex justify-end gap-3">
+      </section>
+
+      <section className="grid gap-4 rounded-md border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-5 w-5 text-sky-700" />
+          <h2 className="text-base font-bold text-slate-950">Datos academicos</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <CampoTexto label="Colegio de procedencia" name="colegio_procedencia" register={register} error={errors.colegio_procedencia} requerido />
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+            <input type="hidden" {...register('gestion_academica_id')} />
+            <p className="text-xs font-medium uppercase text-slate-500">Gestion academica</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {postulante?.gestion_academica?.nombre || gestionActual?.nombre || 'Gestion global no configurada'}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">Se asigna automaticamente segun la gestion global definida por administracion.</p>
+            {errors.gestion_academica_id ? <span className="mt-1 block text-xs text-red-600">{errors.gestion_academica_id.message}</span> : null}
+          </div>
+          <CampoSelect label="Primera opcion de carrera" name="primera_carrera_id" register={register} error={errors.primera_carrera_id} requerido>
+            <option value="">Seleccionar carrera</option>
+            {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.codigo ? `${carrera.codigo} - ${carrera.nombre}` : carrera.nombre}</option>)}
+          </CampoSelect>
+          <CampoSelect label="Segunda opcion de carrera" name="segunda_carrera_id" register={register} error={errors.segunda_carrera_id} requerido>
+            <option value="">Seleccionar carrera</option>
+            {carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.codigo ? `${carrera.codigo} - ${carrera.nombre}` : carrera.nombre}</option>)}
+          </CampoSelect>
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+        <div className="flex items-center gap-2">
+          <FileImage className="h-5 w-5 text-sky-700" />
+          <h2 className="text-base font-bold text-slate-950">Documento de respaldo</h2>
+        </div>
+        <CampoArchivo label="Titulo de bachiller como imagen" name="titulo_bachiller" register={register} error={errors.titulo_bachiller} requerido={requiereArchivo} accept="image/jpeg,image/png,image/webp" />
+      </section>
+
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         {onCancelar ? <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton> : null}
-        <Boton type="submit" cargando={cargando}>{postulante ? 'Guardar cambios' : 'Registrar postulante'}</Boton>
+        <Boton type="submit" cargando={cargando} className="w-full sm:w-auto">{postulante ? 'Guardar cambios' : 'Registrar postulante'}</Boton>
       </div>
     </form>
   )

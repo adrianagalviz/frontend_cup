@@ -76,9 +76,9 @@ export default function DetallePostulante() {
   const documento = postulante?.documentos?.find((item) => item.tipo_documento === 'titulo_bachiller')
   const requisitosAprobados = postulante?.estado_requisitos === 'aprobado'
   const pagoConfirmado = postulante?.pago?.estado_pago === 'pagado' || postulante?.estado_pago === 'pagado'
-  const pagoValidadoAdmin = Boolean(postulante?.pago?.validado_por_usuario_id && postulante?.pago?.validado_en)
+  const pagoValidado = Boolean(postulante?.pago?.validado_por_usuario_id && postulante?.pago?.validado_en)
   const yaEsAlumno = postulante?.estado_postulante === 'habilitado_alumno'
-  const puedeConvertir = requisitosAprobados && pagoConfirmado && pagoValidadoAdmin && !yaEsAlumno
+  const puedeConvertir = requisitosAprobados && pagoConfirmado && pagoValidado && !yaEsAlumno
   const codigoAlumnoVisible = alumnoConvertido?.codigo_alumno || postulante?.alumno?.codigo_alumno || postulante?.alumno?.codigo_acceso
   const puedeValidar = Boolean(documento?.cloudinary_url)
 
@@ -138,8 +138,8 @@ export default function DetallePostulante() {
         <div className="md:col-span-3">
           <div className={`rounded-md border p-3 text-sm ${requisitosAprobados ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
             {requisitosAprobados
-              ? 'El pago queda habilitado visualmente porque el backend devolvio requisitos aprobados.'
-              : 'El pago permanece pendiente visualmente hasta que el backend devuelva requisitos aprobados.'}
+              ? 'Los requisitos estan aprobados. Si el pago ya fue registrado, administracion debe validar el pago antes de convertir.'
+              : 'El administrador debe aprobar los requisitos antes de convertir el postulante en alumno.'}
           </div>
         </div>
         {requisitosAprobados ? (
@@ -172,12 +172,12 @@ export default function DetallePostulante() {
             <div className="mt-2"><BadgeEstado estado={postulante.estado_requisitos} /></div>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-medium uppercase text-slate-500">Pago Stripe</p>
+            <p className="text-xs font-medium uppercase text-slate-500">Pago</p>
             <div className="mt-2"><BadgeEstado estado={pagoConfirmado ? 'pagado' : postulante.estado_pago} /></div>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-medium uppercase text-slate-500">Validacion admin</p>
-            <div className="mt-2"><BadgeEstado estado={pagoValidadoAdmin ? 'aprobado' : 'pendiente'} /></div>
+            <p className="text-xs font-medium uppercase text-slate-500">Validacion pago</p>
+            <div className="mt-2"><BadgeEstado estado={pagoValidado ? 'aprobado' : 'pendiente'} /></div>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
             <p className="text-xs font-medium uppercase text-slate-500">Alumno</p>
@@ -187,8 +187,8 @@ export default function DetallePostulante() {
 
         <div className={`rounded-md border p-3 text-sm ${puedeConvertir ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
           {puedeConvertir
-            ? 'El postulante cumple requisitos, tiene pago confirmado por Stripe y validado por administracion.'
-            : 'Para convertir debe tener requisitos aprobados, pago Stripe pagado y pago validado por administrador.'}
+            ? 'El postulante cumple requisitos, tiene pago registrado y validacion administrativa aprobada.'
+            : 'Para convertir debe tener requisitos aprobados, pago registrado y validacion administrativa aceptada por el administrador.'}
         </div>
 
         {codigoAlumnoVisible ? (
