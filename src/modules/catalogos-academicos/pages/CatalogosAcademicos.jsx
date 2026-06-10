@@ -76,7 +76,7 @@ const schemaHorario = z.object({
   materia_id: z.string().min(1, 'La materia es obligatoria.'),
   docente_id: z.string().min(1, 'El docente es obligatorio.'),
   aula_id: z.string().min(1, 'El aula es obligatoria.'),
-  dia_id: z.string().min(1, 'El dia es obligatorio.'),
+  dia_ids: z.array(z.string()).min(1, 'Selecciona al menos un dia.'),
   turno_id: z.string().min(1, 'El turno es obligatorio.'),
   periodo_id: z.string().min(1, 'El periodo es obligatorio.'),
 })
@@ -399,7 +399,7 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
     materia_id: '',
     docente_id: '',
     aula_id: '',
-    dia_id: '',
+    dia_ids: [],
     turno_id: '',
     periodo_id: '',
   })
@@ -419,9 +419,16 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
 
     try {
       setErrores({})
-      await onGuardar(Object.fromEntries(Object.entries(validacion.data).map(([key, value]) => [key, Number(value)])))
+      const { dia_ids: diaIds, ...datos } = validacion.data
+      const payloadBase = Object.fromEntries(Object.entries(datos).map(([key, value]) => [key, Number(value)]))
+
+      await onGuardar(diaIds.map((diaId) => ({ ...payloadBase, dia_id: Number(diaId) })))
     } catch (error) {
-      setErrores(extraerErrores(error))
+      const erroresBackend = extraerErrores(error)
+      setErrores({
+        ...erroresBackend,
+        ...(erroresBackend.dia_id && !erroresBackend.dia_ids ? { dia_ids: erroresBackend.dia_id } : {}),
+      })
     }
   }
 
@@ -433,6 +440,19 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
     }))
   }
 
+  function alternarDia(diaId) {
+    setForm((actual) => {
+      const seleccionado = actual.dia_ids.includes(String(diaId))
+
+      return {
+        ...actual,
+        dia_ids: seleccionado
+          ? actual.dia_ids.filter((id) => id !== String(diaId))
+          : [...actual.dia_ids, String(diaId)],
+      }
+    })
+  }
+
   return (
     <form className="grid gap-4" onSubmit={enviar}>
       <div className="grid gap-4 md:grid-cols-2">
@@ -441,16 +461,32 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
         <SelectForm label="Materia" value={form.materia_id} error={errores.materia_id} onChange={(value) => actualizar('materia_id', value)} options={materias.map((materia) => ({ value: materia.id, label: materia.nombre }))} />
         <SelectForm label="Docente" value={form.docente_id} error={errores.docente_id} onChange={(value) => actualizar('docente_id', value)} options={docentes.map((docente) => ({ value: docente.id, label: nombreDocente(docente) }))} />
         <SelectForm label="Aula" value={form.aula_id} error={errores.aula_id} onChange={(value) => actualizar('aula_id', value)} options={aulas.map((aula) => ({ value: aula.id, label: aula.ubicacion }))} />
-        <SelectForm label="Dia" value={form.dia_id} error={errores.dia_id} onChange={(value) => actualizar('dia_id', value)} options={dias.map((dia) => ({ value: dia.id, label: dia.nombre }))} />
         <SelectForm label="Turno" value={form.turno_id} error={errores.turno_id} onChange={(value) => actualizar('turno_id', value)} options={turnos.map((turno) => ({ value: turno.id, label: `${turno.nombre} (${turno.hora_inicio} - ${turno.hora_fin})` }))} />
         <SelectForm label="Periodo" value={form.periodo_id} error={errores.periodo_id} onChange={(value) => actualizar('periodo_id', value)} options={periodosFiltrados.map((periodo) => ({ value: periodo.id, label: `Periodo ${periodo.numero_periodo} (${periodo.hora_inicio} - ${periodo.hora_fin})` }))} />
+        <div className="grid gap-1.5 text-sm font-medium text-slate-700 md:col-span-2">
+          <span>Dias *</span>
+          <div className={`grid gap-2 rounded-md border bg-white p-3 sm:grid-cols-2 lg:grid-cols-3 ${errores.dia_ids ? 'border-red-400' : 'border-slate-300'}`}>
+            {dias.map((dia) => (
+              <label key={dia.id} className="flex min-h-9 items-center gap-2 rounded-md px-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <input
+                  type="checkbox"
+                  checked={form.dia_ids.includes(String(dia.id))}
+                  onChange={() => alternarDia(dia.id)}
+                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-100"
+                />
+                <span>{dia.nombre}</span>
+              </label>
+            ))}
+          </div>
+          {errores.dia_ids ? <span className="text-xs text-red-600">{errores.dia_ids}</span> : null}
+        </div>
       </div>
       <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-        Cada horario crea una clase de 90 minutos usando el periodo seleccionado.
+        Se creara una clase de 90 minutos por cada dia seleccionado.
       </div>
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>
-        <Boton type="submit" cargando={cargando}>Crear horario</Boton>
+        <Boton type="submit" cargando={cargando}>{form.dia_ids.length > 1 ? 'Crear horarios' : 'Crear horario'}</Boton>
       </div>
     </form>
   )
@@ -757,9 +793,9 @@ export default function CatalogosAcademicos() {
   })
 
   const crearHorarioMutation = useMutation({
-    mutationFn: crearHorario,
-    onSuccess: () => {
-      toast.success('Horario creado correctamente.')
+    mutationFn: (payloads) => Promise.all(payloads.map((payload) => crearHorario(payload))),
+    onSuccess: (_respuesta, payloads) => {
+      toast.success(payloads.length > 1 ? 'Horarios creados correctamente.' : 'Horario creado correctamente.')
       setModalHorario(false)
       queryClient.invalidateQueries({ queryKey: ['horarios'] })
       queryClient.invalidateQueries({ queryKey: ['docentes'] })
