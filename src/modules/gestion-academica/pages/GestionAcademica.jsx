@@ -333,7 +333,7 @@ export default function GestionAcademica() {
 
   const columnasGestiones = useMemo(() => [
     { header: 'Nombre', cell: ({ row }) => row.original.nombre },
-    { header: 'Anio', cell: ({ row }) => row.original.anio },
+    { header: 'Año', cell: ({ row }) => row.original.anio },
     { header: 'Gestion', cell: ({ row }) => row.original.numero_gestion === 1 ? '1ra gestion' : '2da gestion' },
     { header: 'Estado', cell: ({ row }) => <BadgeEstado estado={estadoActivo(row.original.activa)} /> },
     {
