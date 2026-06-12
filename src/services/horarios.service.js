@@ -34,6 +34,14 @@ export function crearPeriodo(payload) {
   return post('/periodos', payload)
 }
 
+export function editarPeriodo(id, payload) {
+  return put(`/periodos/${id}`, payload)
+}
+
+export function eliminarPeriodo(id) {
+  return destroy(`/periodos/${id}`)
+}
+
 export function listarHorarios(params) {
   return api.get('/horarios', { params }).then((respuesta) => ({
     datos: extraerDatos(respuesta),
@@ -43,6 +51,14 @@ export function listarHorarios(params) {
 
 export function crearHorario(payload) {
   return post('/horarios', payload)
+}
+
+export function editarHorario(id, payload) {
+  return put(`/horarios/${id}`, payload)
+}
+
+export function eliminarHorario(id) {
+  return destroy(`/horarios/${id}`)
 }
 
 export function listarHorariosDocente(docenteId, params) {

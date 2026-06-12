@@ -18,7 +18,7 @@ import { crearAula, editarAula, listarAulas } from '../../../services/aulas.serv
 import { listarDocentes } from '../../../services/docentes.service'
 import { listarGestiones } from '../../../services/gestionAcademica.service'
 import { calcularGruposNecesarios, crearGrupo, desactivarGrupo, editarGrupo, listarAlumnosGrupo, listarGrupos } from '../../../services/grupos.service'
-import { crearHorario, crearPeriodo, crearTurno, editarTurno, eliminarTurno, listarDias, listarHorarios, listarPeriodos, listarTurnos } from '../../../services/horarios.service'
+import { crearHorario, crearPeriodo, crearTurno, editarHorario, editarPeriodo, editarTurno, eliminarHorario, eliminarPeriodo, eliminarTurno, listarDias, listarHorarios, listarPeriodos, listarTurnos } from '../../../services/horarios.service'
 import { listarMaterias } from '../../../services/materias.service'
 import { obtenerErroresValidacion, obtenerMensajeError } from '../../../lib/errores'
 
@@ -327,8 +327,13 @@ function FormularioTurno({ turno, onGuardar, onCancelar, cargando }) {
   )
 }
 
-function FormularioPeriodo({ turnos = [], onGuardar, onCancelar, cargando }) {
-  const [form, setForm] = useState({ turno_id: '', numero_periodo: '', hora_inicio: '', hora_fin: '' })
+function FormularioPeriodo({ periodo, turnos = [], onGuardar, onCancelar, cargando }) {
+  const [form, setForm] = useState({
+    turno_id: periodo?.turno?.id ? String(periodo.turno.id) : '',
+    numero_periodo: periodo?.numero_periodo || '',
+    hora_inicio: periodo?.hora_inicio?.slice(0, 5) || '',
+    hora_fin: periodo?.hora_fin?.slice(0, 5) || '',
+  })
   const [errores, setErrores] = useState({})
   const duracion = diferenciaMinutos(form.hora_inicio, form.hora_fin)
 
@@ -386,22 +391,22 @@ function FormularioPeriodo({ turnos = [], onGuardar, onCancelar, cargando }) {
       </div>
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>
-        <Boton type="submit" cargando={cargando}>Crear periodo</Boton>
+        <Boton type="submit" cargando={cargando}>{periodo ? 'Guardar cambios' : 'Crear periodo'}</Boton>
       </div>
     </form>
   )
 }
 
-function FormularioHorario({ gestiones = [], grupos = [], materias = [], docentes = [], aulas = [], dias = [], turnos = [], periodos = [], onGuardar, onCancelar, cargando }) {
+function FormularioHorario({ horario, gestiones = [], grupos = [], materias = [], docentes = [], aulas = [], dias = [], turnos = [], periodos = [], onGuardar, onCancelar, cargando }) {
   const [form, setForm] = useState({
-    gestion_academica_id: '',
-    grupo_id: '',
-    materia_id: '',
-    docente_id: '',
-    aula_id: '',
-    dia_ids: [],
-    turno_id: '',
-    periodo_id: '',
+    gestion_academica_id: horario?.gestion_academica?.id ? String(horario.gestion_academica.id) : '',
+    grupo_id: horario?.grupo?.id ? String(horario.grupo.id) : '',
+    materia_id: horario?.materia?.id ? String(horario.materia.id) : '',
+    docente_id: horario?.docente?.id ? String(horario.docente.id) : '',
+    aula_id: horario?.aula?.id ? String(horario.aula.id) : '',
+    dia_ids: horario?.dia?.id ? [String(horario.dia.id)] : [],
+    turno_id: horario?.turno?.id ? String(horario.turno.id) : '',
+    periodo_id: horario?.periodo?.id ? String(horario.periodo.id) : '',
   })
   const [errores, setErrores] = useState({})
 
@@ -422,6 +427,11 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
       const { dia_ids: diaIds, ...datos } = validacion.data
       const payloadBase = Object.fromEntries(Object.entries(datos).map(([key, value]) => [key, Number(value)]))
 
+      if (horario) {
+        await onGuardar({ ...payloadBase, dia_id: Number(diaIds[0]) })
+        return
+      }
+
       await onGuardar(diaIds.map((diaId) => ({ ...payloadBase, dia_id: Number(diaId) })))
     } catch (error) {
       const erroresBackend = extraerErrores(error)
@@ -441,6 +451,11 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
   }
 
   function alternarDia(diaId) {
+    if (horario) {
+      setForm((actual) => ({ ...actual, dia_ids: [String(diaId)] }))
+      return
+    }
+
     setForm((actual) => {
       const seleccionado = actual.dia_ids.includes(String(diaId))
 
@@ -469,7 +484,8 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
             {dias.map((dia) => (
               <label key={dia.id} className="flex min-h-9 items-center gap-2 rounded-md px-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 <input
-                  type="checkbox"
+                  type={horario ? 'radio' : 'checkbox'}
+                  name={horario ? 'dia_horario' : undefined}
                   checked={form.dia_ids.includes(String(dia.id))}
                   onChange={() => alternarDia(dia.id)}
                   className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-100"
@@ -482,11 +498,11 @@ function FormularioHorario({ gestiones = [], grupos = [], materias = [], docente
         </div>
       </div>
       <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-        Se creara una clase de 90 minutos por cada dia seleccionado.
+        {horario ? 'Se actualizara una clase de 90 minutos.' : 'Se creara una clase de 90 minutos por cada dia seleccionado.'}
       </div>
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>
-        <Boton type="submit" cargando={cargando}>{form.dia_ids.length > 1 ? 'Crear horarios' : 'Crear horario'}</Boton>
+        <Boton type="submit" cargando={cargando}>{horario ? 'Guardar cambios' : (form.dia_ids.length > 1 ? 'Crear horarios' : 'Crear horario')}</Boton>
       </div>
     </form>
   )
@@ -568,7 +584,13 @@ export default function CatalogosAcademicos() {
   const [turnoEstado, setTurnoEstado] = useState(null)
   const [turnoEliminar, setTurnoEliminar] = useState(null)
   const [modalPeriodo, setModalPeriodo] = useState(false)
+  const [periodoEditando, setPeriodoEditando] = useState(null)
+  const [periodoEstado, setPeriodoEstado] = useState(null)
+  const [periodoEliminar, setPeriodoEliminar] = useState(null)
   const [modalHorario, setModalHorario] = useState(false)
+  const [horarioEditando, setHorarioEditando] = useState(null)
+  const [horarioEstado, setHorarioEstado] = useState(null)
+  const [horarioEliminar, setHorarioEliminar] = useState(null)
   const [mensajeError, setMensajeError] = useState('')
 
   const gestionesQuery = useQuery({
@@ -792,11 +814,58 @@ export default function CatalogosAcademicos() {
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
 
+  const editarPeriodoMutation = useMutation({
+    mutationFn: ({ id, payload }) => editarPeriodo(id, payload),
+    onSuccess: () => {
+      toast.success('Periodo actualizado correctamente.')
+      setModalPeriodo(false)
+      setPeriodoEditando(null)
+      setPeriodoEstado(null)
+      queryClient.invalidateQueries({ queryKey: ['periodos'] })
+      queryClient.invalidateQueries({ queryKey: ['horarios'] })
+    },
+    onError: (error) => setMensajeError(obtenerMensajeError(error)),
+  })
+
+  const eliminarPeriodoMutation = useMutation({
+    mutationFn: eliminarPeriodo,
+    onSuccess: () => {
+      toast.success('Periodo eliminado correctamente.')
+      setPeriodoEliminar(null)
+      queryClient.invalidateQueries({ queryKey: ['periodos'] })
+    },
+    onError: (error) => setMensajeError(obtenerMensajeError(error)),
+  })
+
   const crearHorarioMutation = useMutation({
     mutationFn: (payloads) => Promise.all(payloads.map((payload) => crearHorario(payload))),
     onSuccess: (_respuesta, payloads) => {
       toast.success(payloads.length > 1 ? 'Horarios creados correctamente.' : 'Horario creado correctamente.')
       setModalHorario(false)
+      queryClient.invalidateQueries({ queryKey: ['horarios'] })
+      queryClient.invalidateQueries({ queryKey: ['docentes'] })
+    },
+    onError: (error) => setMensajeError(obtenerMensajeError(error)),
+  })
+
+  const editarHorarioMutation = useMutation({
+    mutationFn: ({ id, payload }) => editarHorario(id, payload),
+    onSuccess: () => {
+      toast.success('Horario actualizado correctamente.')
+      setModalHorario(false)
+      setHorarioEditando(null)
+      setHorarioEstado(null)
+      queryClient.invalidateQueries({ queryKey: ['horarios'] })
+      queryClient.invalidateQueries({ queryKey: ['docentes'] })
+    },
+    onError: (error) => setMensajeError(obtenerMensajeError(error)),
+  })
+
+  const eliminarHorarioMutation = useMutation({
+    mutationFn: eliminarHorario,
+    onSuccess: () => {
+      toast.success('Horario eliminado correctamente.')
+      setHorarioEliminar(null)
       queryClient.invalidateQueries({ queryKey: ['horarios'] })
       queryClient.invalidateQueries({ queryKey: ['docentes'] })
     },
@@ -995,6 +1064,26 @@ export default function CatalogosAcademicos() {
       header: 'Estado',
       cell: ({ row }) => <BadgeEstado estado={estadoActivo(row.original.activo)} />,
     },
+    {
+      header: 'Acciones',
+      cell: ({ row }) => {
+        const periodo = row.original
+
+        return (
+          <AccionesTabla>
+            <Boton variante="secundario" className="min-h-9 px-3" title="Editar periodo" onClick={() => abrirEditarPeriodo(periodo)}>
+              <Edit className="h-4 w-4" />
+            </Boton>
+            <Boton variante={periodo.activo ? 'peligro' : 'secundario'} className="min-h-9 px-3" title={periodo.activo ? 'Desactivar periodo' : 'Activar periodo'} onClick={() => setPeriodoEstado(periodo)}>
+              {periodo.activo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+            </Boton>
+            <Boton variante="peligro" className="min-h-9 px-3" title="Eliminar periodo" onClick={() => setPeriodoEliminar(periodo)}>
+              <Trash2 className="h-4 w-4" />
+            </Boton>
+          </AccionesTabla>
+        )
+      },
+    },
   ], [])
 
   const columnasHorarios = useMemo(() => [
@@ -1026,6 +1115,26 @@ export default function CatalogosAcademicos() {
     {
       header: 'Estado',
       cell: ({ row }) => <BadgeEstado estado={estadoActivo(row.original.activo)} />,
+    },
+    {
+      header: 'Acciones',
+      cell: ({ row }) => {
+        const horario = row.original
+
+        return (
+          <AccionesTabla>
+            <Boton variante="secundario" className="min-h-9 px-3" title="Editar horario" onClick={() => abrirEditarHorario(horario)}>
+              <Edit className="h-4 w-4" />
+            </Boton>
+            <Boton variante={horario.activo ? 'peligro' : 'secundario'} className="min-h-9 px-3" title={horario.activo ? 'Desactivar horario' : 'Activar horario'} onClick={() => setHorarioEstado(horario)}>
+              {horario.activo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+            </Boton>
+            <Boton variante="peligro" className="min-h-9 px-3" title="Eliminar horario" onClick={() => setHorarioEliminar(horario)}>
+              <Trash2 className="h-4 w-4" />
+            </Boton>
+          </AccionesTabla>
+        )
+      },
     },
   ], [])
 
@@ -1089,6 +1198,74 @@ export default function CatalogosAcademicos() {
     if (!turnoEliminar?.id) return
 
     eliminarTurnoMutation.mutate(turnoEliminar.id)
+  }
+
+  function abrirCrearPeriodo() {
+    setMensajeError('')
+    setPeriodoEditando(null)
+    setModalPeriodo(true)
+  }
+
+  function abrirEditarPeriodo(periodo) {
+    setMensajeError('')
+    setPeriodoEditando(periodo)
+    setModalPeriodo(true)
+  }
+
+  async function guardarPeriodo(payload) {
+    if (periodoEditando) {
+      await editarPeriodoMutation.mutateAsync({ id: periodoEditando.id, payload })
+      return
+    }
+
+    await crearPeriodoMutation.mutateAsync(payload)
+  }
+
+  function cambiarEstadoPeriodo() {
+    editarPeriodoMutation.mutate({
+      id: periodoEstado.id,
+      payload: { activo: !periodoEstado.activo },
+    })
+  }
+
+  function confirmarEliminarPeriodo() {
+    if (!periodoEliminar?.id) return
+
+    eliminarPeriodoMutation.mutate(periodoEliminar.id)
+  }
+
+  function abrirCrearHorario() {
+    setMensajeError('')
+    setHorarioEditando(null)
+    setModalHorario(true)
+  }
+
+  function abrirEditarHorario(horario) {
+    setMensajeError('')
+    setHorarioEditando(horario)
+    setModalHorario(true)
+  }
+
+  async function guardarHorario(payload) {
+    if (horarioEditando) {
+      await editarHorarioMutation.mutateAsync({ id: horarioEditando.id, payload })
+      return
+    }
+
+    await crearHorarioMutation.mutateAsync(payload)
+  }
+
+  function cambiarEstadoHorario() {
+    editarHorarioMutation.mutate({
+      id: horarioEstado.id,
+      payload: { activo: !horarioEstado.activo },
+    })
+  }
+
+  function confirmarEliminarHorario() {
+    if (!horarioEliminar?.id) return
+
+    eliminarHorarioMutation.mutate(horarioEliminar.id)
   }
 
   const totalPaginasGrupos = Number(metaGrupos.ultima_pagina || 1)
@@ -1291,10 +1468,7 @@ export default function CatalogosAcademicos() {
                 {turnos.map((turno) => <option key={turno.id} value={turno.id}>{turno.nombre}</option>)}
               </Select>
             </label>
-            <Boton variante="secundario" onClick={() => {
-              setMensajeError('')
-              setModalPeriodo(true)
-            }}>
+            <Boton variante="secundario" onClick={abrirCrearPeriodo}>
               <Plus className="h-4 w-4" />
               Crear periodo manual
             </Boton>
@@ -1331,10 +1505,7 @@ export default function CatalogosAcademicos() {
                 {gestiones.map((gestion) => <option key={gestion.id} value={gestion.id}>{gestion.nombre}</option>)}
               </Select>
             </label>
-            <Boton onClick={() => {
-              setMensajeError('')
-              setModalHorario(true)
-            }}>
+            <Boton onClick={abrirCrearHorario}>
               <Plus className="h-4 w-4" />
               Crear horario
             </Boton>
@@ -1391,17 +1562,24 @@ export default function CatalogosAcademicos() {
         />
       </Modal>
 
-      <Modal abierto={modalPeriodo} titulo="Crear periodo" onCerrar={() => setModalPeriodo(false)} acciones={<></>}>
+      <Modal abierto={modalPeriodo} titulo={periodoEditando ? 'Editar periodo' : 'Crear periodo'} onCerrar={() => setModalPeriodo(false)} acciones={<></>}>
         <FormularioPeriodo
+          key={periodoEditando?.id || 'nuevo-periodo'}
+          periodo={periodoEditando}
           turnos={turnos}
-          onGuardar={(payload) => crearPeriodoMutation.mutateAsync(payload)}
-          onCancelar={() => setModalPeriodo(false)}
-          cargando={crearPeriodoMutation.isPending}
+          onGuardar={guardarPeriodo}
+          onCancelar={() => {
+            setModalPeriodo(false)
+            setPeriodoEditando(null)
+          }}
+          cargando={crearPeriodoMutation.isPending || editarPeriodoMutation.isPending}
         />
       </Modal>
 
-      <Modal abierto={modalHorario} titulo="Crear horario" onCerrar={() => setModalHorario(false)} acciones={<></>} className="max-w-4xl">
+      <Modal abierto={modalHorario} titulo={horarioEditando ? 'Editar horario' : 'Crear horario'} onCerrar={() => setModalHorario(false)} acciones={<></>} className="max-w-4xl">
         <FormularioHorario
+          key={horarioEditando?.id || 'nuevo-horario'}
+          horario={horarioEditando}
           gestiones={gestiones}
           grupos={gruposHorario}
           materias={materias}
@@ -1410,9 +1588,12 @@ export default function CatalogosAcademicos() {
           dias={dias}
           turnos={turnosHorario}
           periodos={periodosHorario}
-          onGuardar={(payload) => crearHorarioMutation.mutateAsync(payload)}
-          onCancelar={() => setModalHorario(false)}
-          cargando={crearHorarioMutation.isPending}
+          onGuardar={guardarHorario}
+          onCancelar={() => {
+            setModalHorario(false)
+            setHorarioEditando(null)
+          }}
+          cargando={crearHorarioMutation.isPending || editarHorarioMutation.isPending}
         />
       </Modal>
 
@@ -1452,6 +1633,42 @@ export default function CatalogosAcademicos() {
         onCancelar={() => setTurnoEliminar(null)}
         onConfirmar={confirmarEliminarTurno}
         cargando={eliminarTurnoMutation.isPending}
+      />
+
+      <ConfirmDialog
+        abierto={Boolean(periodoEstado)}
+        titulo={periodoEstado?.activo ? 'Desactivar periodo' : 'Activar periodo'}
+        mensaje={`Confirma cambiar el estado del periodo ${periodoEstado?.numero_periodo || ''}?`}
+        onCancelar={() => setPeriodoEstado(null)}
+        onConfirmar={cambiarEstadoPeriodo}
+        cargando={editarPeriodoMutation.isPending}
+      />
+
+      <ConfirmDialog
+        abierto={Boolean(periodoEliminar)}
+        titulo="Eliminar periodo"
+        mensaje={`Confirma eliminar el periodo ${periodoEliminar?.numero_periodo || ''}? Solo se eliminara si no tiene horarios asignados.`}
+        onCancelar={() => setPeriodoEliminar(null)}
+        onConfirmar={confirmarEliminarPeriodo}
+        cargando={eliminarPeriodoMutation.isPending}
+      />
+
+      <ConfirmDialog
+        abierto={Boolean(horarioEstado)}
+        titulo={horarioEstado?.activo ? 'Desactivar horario' : 'Activar horario'}
+        mensaje={`Confirma cambiar el estado del horario de ${horarioEstado?.materia?.nombre || 'esta clase'}?`}
+        onCancelar={() => setHorarioEstado(null)}
+        onConfirmar={cambiarEstadoHorario}
+        cargando={editarHorarioMutation.isPending}
+      />
+
+      <ConfirmDialog
+        abierto={Boolean(horarioEliminar)}
+        titulo="Eliminar horario"
+        mensaje={`Confirma eliminar el horario de ${horarioEliminar?.materia?.nombre || 'esta clase'}? No se eliminara si ya tiene asistencias registradas.`}
+        onCancelar={() => setHorarioEliminar(null)}
+        onConfirmar={confirmarEliminarHorario}
+        cargando={eliminarHorarioMutation.isPending}
       />
     </div>
   )
