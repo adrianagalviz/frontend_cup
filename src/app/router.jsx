@@ -5,6 +5,8 @@ import AuthLayout from '../components/layout/AuthLayout'
 import DocenteLayout from '../components/layout/DocenteLayout'
 import { RedireccionPorRol, RutaPorRol, RutaProtegida } from '../components/layout/RutasProtegidas'
 import AdmisionFinal from '../modules/admision/pages/AdmisionFinal'
+import DetalleAlumno from '../modules/alumnos/pages/DetalleAlumno'
+import ListarAlumnos from '../modules/alumnos/pages/ListarAlumnos'
 import AsistenciaAlumnos from '../modules/asistencia-alumnos/pages/AsistenciaAlumnos'
 import AsistenciaDocente from '../modules/asistencia-docente/pages/AsistenciaDocente'
 import GestionAsignaciones from '../modules/asignaciones/pages/GestionAsignaciones'
@@ -31,6 +33,7 @@ import DetallePostulante from '../modules/postulantes/pages/DetallePostulante'
 import EditarPostulante from '../modules/postulantes/pages/EditarPostulante'
 import ListarPostulantes from '../modules/postulantes/pages/ListarPostulantes'
 import RegistroPostulante from '../modules/postulantes/pages/RegistroPostulante'
+import GestionRequisitos from '../modules/requisitos/pages/GestionRequisitos'
 import ReportesAdministrativos from '../modules/reportes/pages/ReportesAdministrativos'
 import VistaPendiente from '../modules/shared/pages/VistaPendiente'
 import ListarUsuarios from '../modules/usuarios/pages/ListarUsuarios'
@@ -69,9 +72,10 @@ const router = createBrowserRouter([
       { path: 'postulantes', element: <ListarPostulantes /> },
       { path: 'postulantes/:id', element: <DetallePostulante /> },
       { path: 'postulantes/:id/editar', element: <EditarPostulante /> },
-      { path: 'requisitos', element: <VistaPendiente titulo="Requisitos" descripcion="Modulo administrativo definido para revisar documentos y validar requisitos." /> },
+      { path: 'requisitos', element: <GestionRequisitos /> },
       { path: 'pagos', element: <ListarPagos /> },
-      { path: 'alumnos', element: <VistaPendiente titulo="Alumnos" descripcion="Modulo administrativo definido para consultar alumnos y codigos automaticos." /> },
+      { path: 'alumnos', element: <ListarAlumnos /> },
+      { path: 'alumnos/:id', element: <DetalleAlumno /> },
       { path: 'gestion-academica', element: <GestionAcademica /> },
       { path: 'docentes', element: <ListarDocentes /> },
       { path: 'horarios', element: <CatalogosAcademicos /> },

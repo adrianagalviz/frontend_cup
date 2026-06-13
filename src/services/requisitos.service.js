@@ -1,4 +1,11 @@
-import { get, patch, post } from '../lib/api'
+import { api, extraerDatos, get, patch, post } from '../lib/api'
+
+export function listarRequisitos(params) {
+  return api.get('/requisitos', { params }).then((respuesta) => ({
+    datos: extraerDatos(respuesta),
+    meta: respuesta?.data?.meta,
+  }))
+}
 
 export function subirDocumentoPostulante(postulanteId, formData) {
   return post(`/postulantes/${postulanteId}/documentos`, formData, {
@@ -14,3 +21,6 @@ export function validarRequisitos(postulanteId, payload) {
   return patch(`/postulantes/${postulanteId}/requisitos/validar`, payload)
 }
 
+export function validarRequisitoDesdeCola(postulanteId, payload) {
+  return patch(`/requisitos/${postulanteId}/validar`, payload)
+}

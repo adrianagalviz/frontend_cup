@@ -117,6 +117,10 @@ function tiempoAMinutos(valor) {
   return (hora * 60) + minuto
 }
 
+function rangosSeCruzan(inicioA, finA, inicioB, finB) {
+  return tiempoAMinutos(inicioA) < tiempoAMinutos(finB) && tiempoAMinutos(finA) > tiempoAMinutos(inicioB)
+}
+
 function generarVistaPreviaPeriodos(inicio, fin) {
   const duracion = diferenciaMinutos(inicio, fin)
 
@@ -327,7 +331,7 @@ function FormularioTurno({ turno, onGuardar, onCancelar, cargando }) {
   )
 }
 
-function FormularioPeriodo({ periodo, turnos = [], onGuardar, onCancelar, cargando }) {
+function FormularioPeriodo({ periodo, turnos = [], periodos = [], onGuardar, onCancelar, cargando }) {
   const [form, setForm] = useState({
     turno_id: periodo?.turno?.id ? String(periodo.turno.id) : '',
     numero_periodo: periodo?.numero_periodo || '',
@@ -336,6 +340,13 @@ function FormularioPeriodo({ periodo, turnos = [], onGuardar, onCancelar, cargan
   })
   const [errores, setErrores] = useState({})
   const duracion = diferenciaMinutos(form.hora_inicio, form.hora_fin)
+  const numerosPeriodo = [1, 2, 3, 4]
+  const numerosUsados = new Set(
+    periodos
+      .filter((item) => String(item.turno?.id) === String(form.turno_id))
+      .filter((item) => !periodo?.id || Number(item.id) !== Number(periodo.id))
+      .map((item) => Number(item.numero_periodo))
+  )
 
   async function enviar(event) {
     event.preventDefault()
@@ -363,7 +374,7 @@ function FormularioPeriodo({ periodo, turnos = [], onGuardar, onCancelar, cargan
     <form className="grid gap-4" onSubmit={enviar}>
       <label className="grid gap-1.5 text-sm font-medium text-slate-700">
         <span>Turno *</span>
-        <Select value={form.turno_id} error={errores.turno_id} onChange={(event) => setForm((actual) => ({ ...actual, turno_id: event.target.value }))}>
+        <Select value={form.turno_id} error={errores.turno_id} onChange={(event) => setForm((actual) => ({ ...actual, turno_id: event.target.value, numero_periodo: '' }))}>
           <option value="">Seleccionar turno</option>
           {turnos.map((turno) => <option key={turno.id} value={turno.id}>{turno.nombre} ({turno.hora_inicio} - {turno.hora_fin})</option>)}
         </Select>
@@ -371,7 +382,14 @@ function FormularioPeriodo({ periodo, turnos = [], onGuardar, onCancelar, cargan
       </label>
       <label className="grid gap-1.5 text-sm font-medium text-slate-700">
         <span>Numero de periodo *</span>
-        <Input type="number" min="1" value={form.numero_periodo} error={errores.numero_periodo} onChange={(event) => setForm((actual) => ({ ...actual, numero_periodo: event.target.value }))} />
+        <Select value={form.numero_periodo} error={errores.numero_periodo} disabled={!form.turno_id} onChange={(event) => setForm((actual) => ({ ...actual, numero_periodo: event.target.value }))}>
+          <option value="">{form.turno_id ? 'Seleccionar periodo' : 'Selecciona un turno primero'}</option>
+          {numerosPeriodo.map((numero) => (
+            <option key={numero} value={numero} disabled={numerosUsados.has(numero)}>
+              Periodo {numero}{numerosUsados.has(numero) ? ' - ya existe' : ''}
+            </option>
+          ))}
+        </Select>
         {errores.numero_periodo ? <span className="text-xs text-red-600">{errores.numero_periodo}</span> : null}
       </label>
       <div className="grid gap-4 md:grid-cols-2">
@@ -397,7 +415,7 @@ function FormularioPeriodo({ periodo, turnos = [], onGuardar, onCancelar, cargan
   )
 }
 
-function FormularioHorario({ horario, gestiones = [], grupos = [], materias = [], docentes = [], aulas = [], dias = [], turnos = [], periodos = [], onGuardar, onCancelar, cargando }) {
+function FormularioHorario({ horario, gestiones = [], grupos = [], materias = [], docentes = [], aulas = [], dias = [], turnos = [], periodos = [], horarios = [], onGuardar, onCancelar, cargando }) {
   const [form, setForm] = useState({
     gestion_academica_id: horario?.gestion_academica?.id ? String(horario.gestion_academica.id) : '',
     grupo_id: horario?.grupo?.id ? String(horario.grupo.id) : '',
@@ -412,6 +430,24 @@ function FormularioHorario({ horario, gestiones = [], grupos = [], materias = []
 
   const periodosFiltrados = (form.turno_id ? periodos.filter((periodo) => String(periodo.turno?.id) === String(form.turno_id)) : periodos)
     .filter((periodo) => Number(periodo.duracion_minutos || DURACION_PERIODO_MINUTOS) === DURACION_PERIODO_MINUTOS)
+
+  function periodoOcupado(periodo) {
+    if (!form.gestion_academica_id || !form.turno_id || !form.dia_ids.length) return false
+
+    return horarios.some((item) => {
+      if (horario?.id && Number(item.id) === Number(horario.id)) return false
+      if (!item.activo) return false
+      if (String(item.gestion_academica?.id) !== String(form.gestion_academica_id)) return false
+      if (!form.dia_ids.includes(String(item.dia?.id))) return false
+      if (!rangosSeCruzan(periodo.hora_inicio, periodo.hora_fin, item.hora_inicio, item.hora_fin)) return false
+
+      return (
+        (form.grupo_id && String(item.grupo?.id) === String(form.grupo_id))
+        || (form.aula_id && String(item.aula?.id) === String(form.aula_id))
+        || (form.docente_id && String(item.docente?.id) === String(form.docente_id))
+      )
+    })
+  }
 
   async function enviar(event) {
     event.preventDefault()
@@ -446,13 +482,13 @@ function FormularioHorario({ horario, gestiones = [], grupos = [], materias = []
     setForm((actual) => ({
       ...actual,
       [nombre]: valor,
-      ...(nombre === 'turno_id' ? { periodo_id: '' } : {}),
+      ...(['gestion_academica_id', 'grupo_id', 'docente_id', 'aula_id', 'turno_id'].includes(nombre) ? { periodo_id: '' } : {}),
     }))
   }
 
   function alternarDia(diaId) {
     if (horario) {
-      setForm((actual) => ({ ...actual, dia_ids: [String(diaId)] }))
+      setForm((actual) => ({ ...actual, dia_ids: [String(diaId)], periodo_id: '' }))
       return
     }
 
@@ -461,6 +497,7 @@ function FormularioHorario({ horario, gestiones = [], grupos = [], materias = []
 
       return {
         ...actual,
+        periodo_id: '',
         dia_ids: seleccionado
           ? actual.dia_ids.filter((id) => id !== String(diaId))
           : [...actual.dia_ids, String(diaId)],
@@ -477,7 +514,6 @@ function FormularioHorario({ horario, gestiones = [], grupos = [], materias = []
         <SelectForm label="Docente" value={form.docente_id} error={errores.docente_id} onChange={(value) => actualizar('docente_id', value)} options={docentes.map((docente) => ({ value: docente.id, label: nombreDocente(docente) }))} />
         <SelectForm label="Aula" value={form.aula_id} error={errores.aula_id} onChange={(value) => actualizar('aula_id', value)} options={aulas.map((aula) => ({ value: aula.id, label: aula.ubicacion }))} />
         <SelectForm label="Turno" value={form.turno_id} error={errores.turno_id} onChange={(value) => actualizar('turno_id', value)} options={turnos.map((turno) => ({ value: turno.id, label: `${turno.nombre} (${turno.hora_inicio} - ${turno.hora_fin})` }))} />
-        <SelectForm label="Periodo" value={form.periodo_id} error={errores.periodo_id} onChange={(value) => actualizar('periodo_id', value)} options={periodosFiltrados.map((periodo) => ({ value: periodo.id, label: `Periodo ${periodo.numero_periodo} (${periodo.hora_inicio} - ${periodo.hora_fin})` }))} />
         <div className="grid gap-1.5 text-sm font-medium text-slate-700 md:col-span-2">
           <span>Dias *</span>
           <div className={`grid gap-2 rounded-md border bg-white p-3 sm:grid-cols-2 lg:grid-cols-3 ${errores.dia_ids ? 'border-red-400' : 'border-slate-300'}`}>
@@ -496,6 +532,21 @@ function FormularioHorario({ horario, gestiones = [], grupos = [], materias = []
           </div>
           {errores.dia_ids ? <span className="text-xs text-red-600">{errores.dia_ids}</span> : null}
         </div>
+        <SelectForm
+          label="Periodo"
+          value={form.periodo_id}
+          error={errores.periodo_id}
+          onChange={(value) => actualizar('periodo_id', value)}
+          options={periodosFiltrados.map((periodo) => {
+            const ocupado = periodoOcupado(periodo)
+
+            return {
+              value: periodo.id,
+              label: `Periodo ${periodo.numero_periodo} (${periodo.hora_inicio} - ${periodo.hora_fin})${ocupado ? ' - ocupado' : ''}`,
+              disabled: ocupado,
+            }
+          })}
+        />
       </div>
       <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
         {horario ? 'Se actualizara una clase de 90 minutos.' : 'Se creara una clase de 90 minutos por cada dia seleccionado.'}
@@ -514,7 +565,7 @@ function SelectForm({ label, value, error, onChange, options }) {
       <span>{label} *</span>
       <Select value={value} error={error} onChange={(event) => onChange(event.target.value)}>
         <option value="">Seleccionar</option>
-        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        {options.map((option) => <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>)}
       </Select>
       {error ? <span className="text-xs text-red-600">{error}</span> : null}
     </label>
@@ -579,6 +630,11 @@ export default function CatalogosAcademicos() {
   const [filtroTurnoActivo, setFiltroTurnoActivo] = useState('')
   const [filtroPeriodoTurno, setFiltroPeriodoTurno] = useState('')
   const [filtroHorarioGestion, setFiltroHorarioGestion] = useState('')
+  const [filtroHorarioGrupo, setFiltroHorarioGrupo] = useState('')
+  const [filtroHorarioDia, setFiltroHorarioDia] = useState('')
+  const [filtroHorarioDocente, setFiltroHorarioDocente] = useState('')
+  const [filtroHorarioEstado, setFiltroHorarioEstado] = useState('')
+  const [filtroHorarioMateria, setFiltroHorarioMateria] = useState('')
   const [modalTurno, setModalTurno] = useState(false)
   const [turnoEditando, setTurnoEditando] = useState(null)
   const [turnoEstado, setTurnoEstado] = useState(null)
@@ -659,15 +715,30 @@ export default function CatalogosAcademicos() {
     queryFn: () => listarPeriodos(periodosParams),
   })
 
+  const periodosFormularioQuery = useQuery({
+    queryKey: ['periodos', 'todos-para-formulario'],
+    queryFn: () => listarPeriodos({ por_pagina: 100 }),
+  })
+
   const horariosParams = {
     page: paginaHorarios,
     por_pagina: 10,
     gestion_academica_id: filtroHorarioGestion || undefined,
+    grupo_id: filtroHorarioGrupo || undefined,
+    dia_id: filtroHorarioDia || undefined,
+    docente_id: filtroHorarioDocente || undefined,
+    activo: filtroHorarioEstado || undefined,
+    materia_id: filtroHorarioMateria || undefined,
   }
 
   const horariosQuery = useQuery({
     queryKey: ['horarios', horariosParams],
     queryFn: () => listarHorarios(horariosParams),
+  })
+
+  const horariosFormularioQuery = useQuery({
+    queryKey: ['horarios', 'activos-para-formulario'],
+    queryFn: () => listarHorarios({ activo: 'true', por_pagina: 100 }),
   })
 
   const docentesQuery = useQuery({
@@ -702,7 +773,9 @@ export default function CatalogosAcademicos() {
   const dias = diasQuery.data?.dias || []
   const turnos = turnosQuery.data?.datos || []
   const periodos = periodosQuery.data?.datos || []
+  const periodosFormulario = periodosFormularioQuery.data?.datos || periodos
   const horarios = horariosQuery.data?.datos || []
+  const horariosFormulario = horariosFormularioQuery.data?.datos || horarios
   const docentes = docentesQuery.data?.datos || []
   const gruposHorario = gruposHorarioQuery.data?.datos || grupos
   const aulasHorario = aulasHorarioQuery.data?.datos || aulas
@@ -1494,17 +1567,70 @@ export default function CatalogosAcademicos() {
         <section className="grid gap-4">
           {horariosQuery.error ? <MensajeError mensaje={obtenerMensajeError(horariosQuery.error)} /> : null}
           {docentesQuery.error ? <MensajeError mensaje={obtenerMensajeError(docentesQuery.error)} /> : null}
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
-            <label className="grid gap-1.5 text-sm font-medium text-slate-700 md:w-72">
-              <span>Gestion academica</span>
-              <Select value={filtroHorarioGestion} onChange={(event) => {
-                setPaginaHorarios(1)
-                setFiltroHorarioGestion(event.target.value)
-              }}>
-                <option value="">Todas</option>
-                {gestiones.map((gestion) => <option key={gestion.id} value={gestion.id}>{gestion.nombre}</option>)}
-              </Select>
-            </label>
+          <div className="flex flex-col justify-between gap-3 xl:flex-row xl:items-end">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:flex-1 xl:grid-cols-6">
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                <span>Gestion academica</span>
+                <Select value={filtroHorarioGestion} onChange={(event) => {
+                  setPaginaHorarios(1)
+                  setFiltroHorarioGestion(event.target.value)
+                }}>
+                  <option value="">Todas</option>
+                  {gestiones.map((gestion) => <option key={gestion.id} value={gestion.id}>{gestion.nombre}</option>)}
+                </Select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                <span>Grupo</span>
+                <Select value={filtroHorarioGrupo} onChange={(event) => {
+                  setPaginaHorarios(1)
+                  setFiltroHorarioGrupo(event.target.value)
+                }}>
+                  <option value="">Todos</option>
+                  {gruposHorario.map((grupo) => <option key={grupo.id} value={grupo.id}>{grupo.nombre}</option>)}
+                </Select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                <span>Dia</span>
+                <Select value={filtroHorarioDia} onChange={(event) => {
+                  setPaginaHorarios(1)
+                  setFiltroHorarioDia(event.target.value)
+                }}>
+                  <option value="">Todos</option>
+                  {dias.map((dia) => <option key={dia.id} value={dia.id}>{dia.nombre}</option>)}
+                </Select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                <span>Docente</span>
+                <Select value={filtroHorarioDocente} onChange={(event) => {
+                  setPaginaHorarios(1)
+                  setFiltroHorarioDocente(event.target.value)
+                }}>
+                  <option value="">Todos</option>
+                  {docentes.map((docente) => <option key={docente.id} value={docente.id}>{nombreDocente(docente)}</option>)}
+                </Select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                <span>Estado</span>
+                <Select value={filtroHorarioEstado} onChange={(event) => {
+                  setPaginaHorarios(1)
+                  setFiltroHorarioEstado(event.target.value)
+                }}>
+                  <option value="">Todos</option>
+                  <option value="true">Activos</option>
+                  <option value="false">Inactivos</option>
+                </Select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+                <span>Materia</span>
+                <Select value={filtroHorarioMateria} onChange={(event) => {
+                  setPaginaHorarios(1)
+                  setFiltroHorarioMateria(event.target.value)
+                }}>
+                  <option value="">Todas</option>
+                  {materias.map((materia) => <option key={materia.id} value={materia.id}>{materia.nombre}</option>)}
+                </Select>
+              </label>
+            </div>
             <Boton onClick={abrirCrearHorario}>
               <Plus className="h-4 w-4" />
               Crear horario
@@ -1567,6 +1693,7 @@ export default function CatalogosAcademicos() {
           key={periodoEditando?.id || 'nuevo-periodo'}
           periodo={periodoEditando}
           turnos={turnos}
+          periodos={periodosFormulario}
           onGuardar={guardarPeriodo}
           onCancelar={() => {
             setModalPeriodo(false)
@@ -1588,6 +1715,7 @@ export default function CatalogosAcademicos() {
           dias={dias}
           turnos={turnosHorario}
           periodos={periodosHorario}
+          horarios={horariosFormulario}
           onGuardar={guardarHorario}
           onCancelar={() => {
             setModalHorario(false)

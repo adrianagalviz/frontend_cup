@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { LogIn, LogOut, RefreshCw, Search } from 'lucide-react'
+import { LogIn, RefreshCw, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
@@ -13,7 +13,6 @@ import { obtenerMensajeError } from '../../../lib/errores'
 import {
   listarAsistenciaDocente,
   marcarEntradaDocente,
-  marcarSalidaDocente,
   obtenerHorarioActivoDocente,
 } from '../../../services/asistencia.service'
 import { listarDocentes } from '../../../services/docentes.service'
@@ -54,7 +53,6 @@ function VistaDocente() {
   const asistencia = datos.asistencia
   const puedeMarcar = Boolean(datos.puede_marcar && horario)
   const entradaMarcada = Boolean(asistencia?.hora_entrada)
-  const salidaMarcada = Boolean(asistencia?.hora_salida)
 
   const refrescarClase = () => queryClient.invalidateQueries({ queryKey: ['asistencia-docente', 'clase-activa'] })
 
@@ -62,14 +60,6 @@ function VistaDocente() {
     mutationFn: marcarEntradaDocente,
     onSuccess: (respuesta) => {
       toast.success(`Entrada registrada: ${respuesta?.asistencia?.estado_entrada || 'estado actualizado'}.`)
-      refrescarClase()
-    },
-  })
-
-  const salidaMutation = useMutation({
-    mutationFn: marcarSalidaDocente,
-    onSuccess: () => {
-      toast.success('Salida docente registrada correctamente.')
       refrescarClase()
     },
   })
@@ -90,7 +80,6 @@ function VistaDocente() {
 
       {claseQuery.error ? <MensajeError mensaje={obtenerMensajeError(claseQuery.error)} /> : null}
       {entradaMutation.error ? <MensajeError mensaje={obtenerMensajeError(entradaMutation.error)} /> : null}
-      {salidaMutation.error ? <MensajeError mensaje={obtenerMensajeError(salidaMutation.error)} /> : null}
 
       <div className="rounded-md border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
@@ -111,7 +100,7 @@ function VistaDocente() {
 
         <div className="mt-5 grid gap-3 rounded-md bg-slate-50 p-4 sm:grid-cols-2">
           <TarjetaDato etiqueta="Entrada" valor={asistencia?.hora_entrada ? `${asistencia.hora_entrada} (${asistencia.estado_entrada})` : 'Sin entrada marcada'} />
-          <TarjetaDato etiqueta="Salida" valor={asistencia?.hora_salida ? `${asistencia.hora_salida} (${asistencia.estado_salida})` : 'Sin salida marcada'} />
+          <TarjetaDato etiqueta="Salida automatica" valor={asistencia?.hora_salida ? `${asistencia.hora_salida} (${asistencia.estado_salida})` : 'Se registrara con la entrada'} />
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -122,15 +111,6 @@ function VistaDocente() {
           >
             <LogIn className="h-4 w-4" />
             Marcar entrada
-          </Boton>
-          <Boton
-            variante="secundario"
-            onClick={() => salidaMutation.mutate({})}
-            disabled={!entradaMarcada || salidaMarcada}
-            cargando={salidaMutation.isPending}
-          >
-            <LogOut className="h-4 w-4" />
-            Marcar salida
           </Boton>
         </div>
       </div>
