@@ -92,7 +92,7 @@ export default function DetalleAlumno() {
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
             <h2 className="text-base font-semibold text-slate-950">Acceso como alumno</h2>
-            <p className="mt-1 text-sm text-slate-600">Codigo usado para el login del alumno.</p>
+            <p className="mt-1 text-sm text-slate-600">Codigo usado para el login del alumno. La contrasena inicial es su numero de CI.</p>
           </div>
           <Boton variante="secundario" onClick={copiarCodigo}>
             <Copy className="h-4 w-4" />

@@ -30,7 +30,7 @@ const schema = z.object({
     })
   }
 
-  if (values.tipo_login === 'tradicional' && !values.password) {
+  if (!values.password) {
     ctx.addIssue({
       code: 'custom',
       path: ['password'],
@@ -68,6 +68,7 @@ export default function Login() {
 
   function seleccionarTipoLogin(tipo) {
     setValue('tipo_login', tipo, { shouldValidate: true })
+    setValue('password', '', { shouldValidate: false })
     setMensajeError('')
   }
 
@@ -76,7 +77,7 @@ export default function Login() {
 
     try {
       const datos = tipoLogin === 'alumno'
-        ? await iniciarSesionAlumno({ codigo_alumno: values.usuario })
+        ? await iniciarSesionAlumno({ codigo_alumno: values.usuario, password: values.password || '' })
         : await iniciarSesion({ usuario: values.usuario, password: values.password || '' })
 
       toast.success('Inicio de sesion correcto.')
@@ -150,15 +151,14 @@ export default function Login() {
         requerido
         placeholder={tipoLogin === 'alumno' ? 'Ejemplo: 2026113541539' : 'admin o admin@cupficct.local'}
       />
-      {tipoLogin === 'tradicional' ? (
-        <CampoPassword
-          label="Contrasena"
-          name="password"
-          register={register}
-          error={errors.password}
-          requerido
-        />
-      ) : null}
+      <CampoPassword
+        label={tipoLogin === 'alumno' ? 'Contrasena (CI)' : 'Contrasena'}
+        name="password"
+        register={register}
+        error={errors.password}
+        requerido
+        placeholder={tipoLogin === 'alumno' ? 'Numero de cedula de identidad' : undefined}
+      />
       <Boton type="submit" cargando={isSubmitting}>Ingresar</Boton>
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-slate-200" />

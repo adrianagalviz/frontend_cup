@@ -8,6 +8,10 @@ export function crearExamen(payload) {
   return post('/examenes', payload)
 }
 
+export function verExamen(examenId) {
+  return get(`/examenes/${examenId}`)
+}
+
 export function asignarMateriasExamen(examenId, payload) {
   return post(`/examenes/${examenId}/materias`, payload)
 }
@@ -43,4 +47,3 @@ export function responderExamenAlumno(examenId, payload) {
 export function verResultadoExamenAlumno(examenId) {
   return get(`/alumno/examenes/${examenId}/resultado`)
 }
-

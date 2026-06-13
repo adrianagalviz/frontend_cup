@@ -156,7 +156,7 @@ export default function DetallePostulante() {
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
             <h2 className="text-base font-semibold text-slate-950">Acceso como alumno</h2>
-            <p className="mt-1 text-sm text-slate-600">El codigo automatico lo genera el backend al convertir el postulante.</p>
+            <p className="mt-1 text-sm text-slate-600">El codigo automatico lo genera el backend al convertir el postulante. La contrasena inicial es su numero de CI.</p>
           </div>
           <Boton disabled={!puedeConvertir} cargando={convertirMutation.isPending} onClick={() => setConfirmarConversion(true)}>
             <GraduationCap className="h-4 w-4" />
@@ -201,7 +201,7 @@ export default function DetallePostulante() {
                 Copiar codigo
               </Boton>
             </div>
-            <p className="mt-2 text-sm text-emerald-700">Este codigo sirve para el login del alumno.</p>
+            <p className="mt-2 text-sm text-emerald-700">Para ingresar debe usar este codigo y su numero de CI como contrasena.</p>
           </div>
         ) : null}
       </section>
@@ -286,7 +286,7 @@ export default function DetallePostulante() {
       <ConfirmDialog
         abierto={confirmarConversion}
         titulo="Dar acceso como alumno"
-        mensaje="Confirma convertir este postulante en alumno? El backend generara el codigo automatico de acceso."
+        mensaje="Confirma convertir este postulante en alumno? El backend generara el codigo automatico de acceso y usara su numero de CI como contrasena inicial."
         onCancelar={() => setConfirmarConversion(false)}
         onConfirmar={() => convertirMutation.mutate()}
         cargando={convertirMutation.isPending}

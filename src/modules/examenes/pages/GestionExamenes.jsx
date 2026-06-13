@@ -6,6 +6,7 @@ import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
 import ConfirmDialog from '../../../components/common/ConfirmDialog'
 import Input from '../../../components/common/Input'
+import Loader from '../../../components/common/Loader'
 import MensajeError from '../../../components/common/MensajeError'
 import Modal from '../../../components/common/Modal'
 import Select from '../../../components/common/Select'
@@ -21,6 +22,7 @@ import {
   deshabilitarExamen,
   habilitarExamen,
   listarExamenes,
+  verExamen,
 } from '../../../services/examenes.service'
 import { listarGestiones } from '../../../services/gestionAcademica.service'
 import { listarMaterias } from '../../../services/materias.service'
@@ -58,7 +60,7 @@ function materiasDeExamen(examen) {
 }
 
 function preguntasDeExamen(examen) {
-  return examen?.preguntas || []
+  return [...(examen?.preguntas || [])].sort((a, b) => Number(a.id || 0) - Number(b.id || 0))
 }
 
 function puntajeAutomaticoEstimado(examen, materiaId) {
@@ -344,8 +346,8 @@ function DetalleExamen({ examen }) {
               </div>
               <div className="mt-3 grid gap-2">
                 {pregunta.opciones?.map((opcion) => (
-                  <div key={opcion.id || opcion.orden} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2">
-                    <span>{opcion.orden}. {opcion.texto_opcion}</span>
+                  <div key={opcion.id || opcion.orden} className="flex flex-col gap-2 rounded-md bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="min-w-0 break-words">{opcion.orden}. {opcion.texto_opcion}</span>
                     {opcion.es_correcta ? <BadgeEstado estado="aprobado" /> : null}
                   </div>
                 ))}
@@ -387,6 +389,14 @@ export default function GestionExamenes() {
   const gestiones = gestionesQuery.data || []
   const materias = materiasQuery.data?.materias || []
   const error = examenesQuery.error || gestionesQuery.error || materiasQuery.error
+
+  const detalleQuery = useQuery({
+    queryKey: ['examenes-admin', 'detalle', examenDetalle?.id],
+    queryFn: () => verExamen(examenDetalle.id),
+    enabled: Boolean(examenDetalle?.id),
+  })
+
+  const examenDetalleCompleto = detalleQuery.data?.examen || examenDetalle
 
   function invalidarExamenes() {
     queryClient.invalidateQueries({ queryKey: ['examenes-admin'] })
@@ -582,7 +592,9 @@ export default function GestionExamenes() {
       </Modal>
 
       <Modal abierto={Boolean(examenDetalle)} titulo="Detalle del examen" onCerrar={() => setExamenDetalle(null)} className="max-w-4xl">
-        <DetalleExamen examen={examenDetalle} />
+        {detalleQuery.isLoading ? <Loader texto="Cargando detalle del examen..." /> : null}
+        {detalleQuery.error ? <MensajeError mensaje={obtenerMensajeError(detalleQuery.error)} /> : null}
+        {!detalleQuery.isLoading && !detalleQuery.error ? <DetalleExamen examen={examenDetalleCompleto} /> : null}
       </Modal>
 
       <ConfirmDialog
