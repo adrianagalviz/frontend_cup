@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { BarChart3, Download, FileSpreadsheet, FileText, Mic, MicOff, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -264,7 +264,7 @@ function GraficoReporte({ reporte, filas }) {
             <XAxis dataKey="nombre" tick={{ fontSize: 11 }} />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="valor" fill="#0369a1" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="valor" fill="var(--theme-strong)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

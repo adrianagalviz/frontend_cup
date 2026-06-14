@@ -18,6 +18,7 @@ import DashboardAlumno from '../modules/dashboard/pages/DashboardAlumno'
 import DashboardDocente from '../modules/dashboard/pages/DashboardDocente'
 import CargaMasiva from '../modules/carga-masiva/pages/CargaMasiva'
 import CatalogosAcademicos from '../modules/catalogos-academicos/pages/CatalogosAcademicos'
+import ConfiguracionVisual from '../modules/configuracion/pages/ConfiguracionVisual'
 import ListarDocentes from '../modules/docentes/pages/ListarDocentes'
 import ExamenesAlumno from '../modules/examenes-alumno/pages/ExamenesAlumno'
 import GestionExamenes from '../modules/examenes/pages/GestionExamenes'
@@ -69,6 +70,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/admin/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardAdministrador /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
+      { path: 'configuracion', element: <ConfiguracionVisual /> },
       { path: 'usuarios', element: <ListarUsuarios /> },
       { path: 'roles-permisos', element: <GestionRolesPermisos /> },
       { path: 'postulantes/registro', element: <RegistroPostulante /> },
@@ -106,6 +108,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/docente/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardDocente /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
+      { path: 'configuracion', element: <ConfiguracionVisual /> },
       { path: 'horarios', element: <HorariosPorRol rol="docente" /> },
       { path: 'asistencias', element: <AsistenciaDocente modo="docente" /> },
       { path: 'asistencia-alumnos', element: <AsistenciaAlumnos modo="docente" /> },
@@ -124,6 +127,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/alumno/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardAlumno /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
+      { path: 'configuracion', element: <ConfiguracionVisual /> },
       { path: 'horarios', element: <HorariosPorRol rol="alumno" /> },
       { path: 'asistencias', element: <AsistenciaAlumnos modo="alumno" /> },
       { path: 'examenes', element: <ExamenesAlumno /> },

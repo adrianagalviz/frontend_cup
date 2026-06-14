@@ -1,4 +1,4 @@
-import { get, post } from '../lib/api'
+import { get, patch, post } from '../lib/api'
 
 export async function loginTradicional(payload) {
   return post('/auth/login', payload)
@@ -18,4 +18,8 @@ export async function obtenerPerfil() {
 
 export async function cerrarSesion() {
   return post('/auth/logout')
+}
+
+export async function actualizarConfiguracionVisual(payload) {
+  return patch('/auth/configuracion-visual', payload)
 }

@@ -34,7 +34,14 @@ import {
 import { listarGestiones } from '../../../services/gestionAcademica.service'
 import { listarUsuarios } from '../../../services/usuarios.service'
 
-const coloresGrafico = ['#0369a1', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0f766e', '#be123c', '#4f46e5']
+const coloresGrafico = [
+  'var(--theme-strong)',
+  'var(--theme-mid)',
+  'var(--theme-soft)',
+  'color-mix(in srgb, var(--theme-strong) 74%, var(--theme-surface))',
+  'color-mix(in srgb, var(--theme-mid) 72%, var(--theme-text))',
+  'color-mix(in srgb, var(--theme-soft) 68%, var(--theme-text))',
+]
 const filtrosIniciales = {
   gestion_academica_id: '',
   carrera_id: '',
@@ -97,7 +104,7 @@ function PanelDistribucion({ titulo, descripcion, datos }) {
             />
             <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
             <Tooltip formatter={(value) => numero(value)} />
-            <Bar dataKey="valor" fill="#0369a1" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="valor" fill="var(--theme-strong)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

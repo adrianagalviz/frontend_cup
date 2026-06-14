@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AuthContext } from '../hooks/authContext'
-import { cerrarSesion, loginAlumno, loginFirebase, loginTradicional, obtenerPerfil } from '../services/auth.service'
+import { actualizarConfiguracionVisual, cerrarSesion, loginAlumno, loginFirebase, loginTradicional, obtenerPerfil } from '../services/auth.service'
 import { cerrarSesionFirebase } from '../lib/firebase'
 import { limpiarSesionGuardada, guardarToken, guardarUsuario, obtenerToken, obtenerUsuarioGuardado } from '../lib/storage'
+import { CONFIGURACION_VISUAL_DEFAULT, normalizarConfiguracionVisual } from '../config/theme.config'
 
 function transformarPerfil(respuesta) {
   const datos = respuesta?.datos || respuesta
@@ -14,6 +15,7 @@ function transformarPerfil(respuesta) {
         rol: datos.rol?.nombre || datos.usuario?.rol,
         persona: datos.persona || datos.usuario?.persona,
         datos_rol: datos.datos_rol,
+        configuracion_visual: normalizarConfiguracionVisual(datos.usuario?.configuracion_visual),
       }
     : null
 }
@@ -94,6 +96,33 @@ export default function AuthProvider({ children }) {
     }
   }, [queryClient, token])
 
+  const guardarConfiguracionVisual = useCallback(async (configuracion) => {
+    const configuracionNormalizada = normalizarConfiguracionVisual(configuracion)
+    const respuesta = await actualizarConfiguracionVisual(configuracionNormalizada)
+    const configuracionGuardada = normalizarConfiguracionVisual(respuesta?.configuracion_visual || configuracionNormalizada)
+
+    setUsuario((actual) => {
+      if (!actual) return actual
+
+      const actualizado = {
+        ...actual,
+        configuracion_visual: configuracionGuardada,
+      }
+
+      guardarUsuario(actualizado)
+      return actualizado
+    })
+
+    return configuracionGuardada
+  }, [])
+
+  useEffect(() => {
+    const configuracion = normalizarConfiguracionVisual(usuario?.configuracion_visual || CONFIGURACION_VISUAL_DEFAULT)
+    document.documentElement.dataset.themePalette = configuracion.paleta
+    document.documentElement.dataset.themeMode = configuracion.modo
+    document.documentElement.style.colorScheme = configuracion.modo === 'oscuro' ? 'dark' : 'light'
+  }, [usuario?.configuracion_visual])
+
   useEffect(() => {
     if (!token) return
 
@@ -133,8 +162,9 @@ export default function AuthProvider({ children }) {
     iniciarSesionAlumno,
     iniciarSesionFirebase,
     refrescarPerfil,
+    guardarConfiguracionVisual,
     salir,
-  }), [iniciarSesion, iniciarSesionAlumno, iniciarSesionFirebase, refrescarPerfil, salir, token, usuario, validandoSesion])
+  }), [guardarConfiguracionVisual, iniciarSesion, iniciarSesionAlumno, iniciarSesionFirebase, refrescarPerfil, salir, token, usuario, validandoSesion])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

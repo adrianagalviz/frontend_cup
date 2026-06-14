@@ -14,6 +14,7 @@ import {
   Landmark,
   LayoutGrid,
   ScrollText,
+  Settings,
   School,
   ShieldCheck,
   User,
@@ -29,6 +30,7 @@ const menuPorRol = {
       items: [
         { to: '/admin/dashboard', label: 'Dashboard', icon: Home },
         { to: '/admin/perfil', label: 'Perfil', icon: User },
+        { to: '/admin/configuracion', label: 'Configuracion', icon: Settings },
       ],
     },
     {
@@ -76,6 +78,7 @@ const menuPorRol = {
       items: [
         { to: '/docente/dashboard', label: 'Dashboard', icon: Home },
         { to: '/docente/perfil', label: 'Perfil', icon: User },
+        { to: '/docente/configuracion', label: 'Configuracion', icon: Settings },
       ],
     },
     {
@@ -93,6 +96,7 @@ const menuPorRol = {
       items: [
         { to: '/alumno/dashboard', label: 'Dashboard', icon: Home },
         { to: '/alumno/perfil', label: 'Perfil', icon: User },
+        { to: '/alumno/configuracion', label: 'Configuracion', icon: Settings },
       ],
     },
     {
