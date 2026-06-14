@@ -14,6 +14,7 @@ import {
   Landmark,
   LayoutGrid,
   School,
+  ShieldCheck,
   User,
   UserCog,
   Users,
@@ -33,6 +34,7 @@ const menuPorRol = {
       modulo: 'Administracion',
       items: [
         { to: '/admin/usuarios', label: 'Usuarios', icon: UserCog },
+        { to: '/admin/roles-permisos', label: 'Roles y permisos', icon: ShieldCheck },
         { to: '/admin/postulantes', label: 'Postulantes', icon: Users },
         { to: '/admin/requisitos', label: 'Requisitos', icon: ClipboardCheck },
         { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },

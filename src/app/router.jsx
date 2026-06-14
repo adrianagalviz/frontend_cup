@@ -35,6 +35,7 @@ import ListarPostulantes from '../modules/postulantes/pages/ListarPostulantes'
 import RegistroPostulante from '../modules/postulantes/pages/RegistroPostulante'
 import GestionRequisitos from '../modules/requisitos/pages/GestionRequisitos'
 import ReportesAdministrativos from '../modules/reportes/pages/ReportesAdministrativos'
+import GestionRolesPermisos from '../modules/roles-permisos/pages/GestionRolesPermisos'
 import VistaPendiente from '../modules/shared/pages/VistaPendiente'
 import ListarUsuarios from '../modules/usuarios/pages/ListarUsuarios'
 
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
       { path: 'dashboard', element: <DashboardAdministrador /> },
       { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'usuarios', element: <ListarUsuarios /> },
+      { path: 'roles-permisos', element: <GestionRolesPermisos /> },
       { path: 'postulantes/registro', element: <RegistroPostulante /> },
       { path: 'postulantes', element: <ListarPostulantes /> },
       { path: 'postulantes/:id', element: <DetallePostulante /> },
