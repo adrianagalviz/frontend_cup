@@ -85,7 +85,7 @@ function PanelDistribucion({ titulo, descripcion, datos }) {
         {descripcion ? <p className="mt-1 text-sm text-slate-500">{descripcion}</p> : null}
       </div>
       <div className="h-72 sm:h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <BarChart data={datos} margin={{ top: 8, right: 12, left: 0, bottom: 24 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -117,7 +117,7 @@ function PanelCircular({ titulo, descripcion, datos }) {
         {descripcion ? <p className="mt-1 text-sm text-slate-500">{descripcion}</p> : null}
       </div>
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <PieChart>
             <Pie data={datos} dataKey="valor" nameKey="nombre" innerRadius={54} outerRadius={86} paddingAngle={2}>
               {datos.map((item, index) => <Cell key={item.nombre} fill={coloresGrafico[index % coloresGrafico.length]} />)}

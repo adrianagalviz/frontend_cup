@@ -1,4 +1,4 @@
-import { get, post } from '../lib/api'
+import { api, get, post } from '../lib/api'
 import { API_BASE_URL } from '../config/api.config'
 
 export function reportePostulantes(params) {
@@ -43,7 +43,15 @@ export function reporteAsistenciaAlumnos(params) {
 
 function urlPublicaBackend(ruta) {
   if (!ruta) return ''
-  if (/^https?:\/\//i.test(ruta)) return ruta
+  
+  if (/^https?:\/\//i.test(ruta)) {
+    const base = API_BASE_URL.replace(/\/+$/, '').replace(/\/api$/i, '')
+    if (ruta.includes('/storage/')) {
+      const parts = ruta.split('/storage/')
+      return `${base}/storage/${parts[parts.length - 1]}`
+    }
+    return ruta
+  }
 
   const base = API_BASE_URL.replace(/\/+$/, '').replace(/\/api$/i, '')
   return `${base}/${String(ruta).replace(/^\/+/, '')}`
@@ -51,7 +59,7 @@ function urlPublicaBackend(ruta) {
 
 function normalizarExportacion(respuesta) {
   const archivo = respuesta?.archivo
-  const url = urlPublicaBackend(archivo?.ruta) || archivo?.url
+  const url = urlPublicaBackend(archivo?.ruta) || urlPublicaBackend(archivo?.url)
 
   return {
     ...respuesta,
@@ -71,7 +79,19 @@ function extensionPorFormato(formato) {
   return formato === 'pdf' ? 'pdf' : 'xlsx'
 }
 
-async function descargarBlob(url, formato) {
+async function descargarBlob(url, formato, ruta = null) {
+  if (ruta) {
+    try {
+      const respuesta = await api.get('/reportes/descargar-archivo', {
+        params: { ruta },
+        responseType: 'blob',
+      })
+      return respuesta.data
+    } catch (error) {
+      console.warn('Fallo descarga via API, intentando fetch directo:', error)
+    }
+  }
+
   const respuesta = await fetch(url)
 
   if (!respuesta.ok) {
@@ -83,46 +103,63 @@ async function descargarBlob(url, formato) {
   ))
 }
 
-async function guardarArchivoExportado(url, nombreArchivo, formato) {
+async function guardarArchivoExportado(url, nombreArchivo, formato, ruta = null) {
   if (!url || typeof window === 'undefined') return false
 
-  const blob = await descargarBlob(url, formato)
   const extension = extensionPorFormato(formato)
   const nombre = nombreArchivo || `reporte.${extension}`
 
-  if ('showSaveFilePicker' in window) {
-    try {
-      const manejador = await window.showSaveFilePicker({
-        suggestedName: nombre,
-        types: [
-          {
-            description: formato === 'pdf' ? 'Documento PDF' : 'Libro de Excel',
-            accept: {
-              [tipoMimePorFormato(formato)]: [`.${extension}`],
+  try {
+    const blob = await descargarBlob(url, formato, ruta)
+
+    if ('showSaveFilePicker' in window) {
+      try {
+        const manejador = await window.showSaveFilePicker({
+          suggestedName: nombre,
+          types: [
+            {
+              description: formato === 'pdf' ? 'Documento PDF' : 'Libro de Excel',
+              accept: {
+                [tipoMimePorFormato(formato)]: [`.${extension}`],
+              },
             },
-          },
-        ],
-      })
-      const writable = await manejador.createWritable()
-      await writable.write(blob)
-      await writable.close()
-      return true
-    } catch (error) {
-      if (error?.name === 'AbortError') return false
-      throw error
+          ],
+        })
+        const writable = await manejador.createWritable()
+        await writable.write(blob)
+        await writable.close()
+        return true
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return false
+        }
+        console.warn('showSaveFilePicker falló o fue denegado. Usando descarga automática:', error)
+      }
     }
+
+    const blobUrl = window.URL.createObjectURL(blob)
+    const enlace = document.createElement('a')
+    enlace.href = blobUrl
+    enlace.download = nombre
+    document.body.appendChild(enlace)
+    enlace.click()
+    enlace.remove()
+    window.URL.revokeObjectURL(blobUrl)
+
+    return true
+  } catch (error) {
+    console.warn('Fallo al descargar el archivo como blob, usando descarga nativa directa:', error)
+
+    const enlace = document.createElement('a')
+    enlace.href = url
+    enlace.download = nombre
+    enlace.target = '_blank'
+    document.body.appendChild(enlace)
+    enlace.click()
+    enlace.remove()
+
+    return true
   }
-
-  const blobUrl = window.URL.createObjectURL(blob)
-  const enlace = document.createElement('a')
-  enlace.href = blobUrl
-  enlace.download = nombre
-  document.body.appendChild(enlace)
-  enlace.click()
-  enlace.remove()
-  window.URL.revokeObjectURL(blobUrl)
-
-  return true
 }
 
 export async function generarReportePorComandoVoz(payload) {
@@ -150,7 +187,7 @@ export async function exportarReporte(tipo, params, formato = 'pdf') {
   const exportacion = normalizarExportacion(respuesta)
   const url = exportacion.archivo?.url
 
-  const guardado = await guardarArchivoExportado(url, exportacion.archivo?.nombre, formato)
+  const guardado = await guardarArchivoExportado(url, exportacion.archivo?.nombre, formato, exportacion.archivo?.ruta)
 
   return {
     ...exportacion,
