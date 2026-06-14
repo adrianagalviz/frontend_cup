@@ -27,6 +27,14 @@ export function asignarAlumnosAGrupos(payload) {
   return post('/grupos/asignar-alumnos', payload)
 }
 
+export function obtenerOpcionesGrupoAlumno() {
+  return get('/alumno/grupos/opciones')
+}
+
+export function asignarGrupoAlumno(payload = {}) {
+  return post('/alumno/grupo/asignacion', payload)
+}
+
 export function listarAlumnosGrupo(grupoId, params) {
   return get(`/grupos/${grupoId}/alumnos`, { params })
 }

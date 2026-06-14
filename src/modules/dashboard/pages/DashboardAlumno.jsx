@@ -1,6 +1,7 @@
+import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { BookOpen, CalendarDays, ClipboardCheck, Copy, FileSpreadsheet, User } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { BookOpen, CalendarDays, ClipboardCheck, Copy, FileSpreadsheet, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
@@ -13,6 +14,7 @@ import { useAuth } from '../../../hooks/useAuth'
 import { obtenerMensajeError } from '../../../lib/errores'
 import { obtenerHorarioActivoAlumno, listarMisAsistenciasAlumno } from '../../../services/asistencia.service'
 import { listarExamenesHabilitadosAlumno } from '../../../services/examenes.service'
+import { asignarGrupoAlumno, obtenerOpcionesGrupoAlumno } from '../../../services/grupos.service'
 import { listarHorariosAlumno } from '../../../services/horarios.service'
 import { listarNotasAlumno } from '../../../services/notas.service'
 
@@ -105,6 +107,78 @@ function TarjetaClase({ horario, claseActiva }) {
   )
 }
 
+function PanelAsignacionGrupo({ opciones, cargando, error, asignando, onElegir }) {
+  if (cargando) {
+    return (
+      <section className="rounded-md border border-slate-200 bg-white p-5">
+        <Loader texto="Revisando grupo academico..." />
+      </section>
+    )
+  }
+
+  if (error) return <MensajeError mensaje={obtenerMensajeError(error)} />
+  if (!opciones) return null
+
+  const grupoActual = opciones.grupo_actual
+  const grupos = opciones.grupos || []
+
+  if (opciones.estado === 'asignado') {
+    return (
+      <section className="rounded-md border border-emerald-200 bg-emerald-50 p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase text-emerald-700">Grupo asignado</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-950">{texto(grupoActual?.nombre, 'Sin grupo')}</h2>
+            <p className="mt-1 text-sm text-emerald-800">La asignacion de grupo es unica y no puede cambiarse.</p>
+          </div>
+          <BadgeEstado estado="asignado" />
+        </div>
+      </section>
+    )
+  }
+
+  if (opciones.estado === 'sin_grupos') {
+    return <MensajeError mensaje="Todavia no existen grupos activos para tu gestion academica. Tus horarios apareceran cuando administracion habilite un grupo." />
+  }
+
+  if (opciones.estado === 'auto_asignable') {
+    return (
+      <section className="rounded-md border border-sky-200 bg-sky-50 p-5">
+        <div className="flex items-start gap-3">
+          <Users className="mt-0.5 h-5 w-5 text-sky-700" />
+          <div>
+            <h2 className="text-base font-semibold text-slate-950">Asignando grupo automaticamente</h2>
+            <p className="mt-1 text-sm text-sky-900">Existe un unico grupo activo para tu gestion. El sistema lo asignara directamente.</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="grid gap-4 rounded-md border border-slate-200 bg-white p-5">
+      <div>
+        <p className="text-xs font-medium uppercase text-slate-500">Elegir grupo</p>
+        <h2 className="mt-1 text-lg font-semibold text-slate-950">Selecciona tu grupo academico</h2>
+        <p className="mt-1 text-sm text-slate-600">Esta eleccion se realiza una sola vez y no podra cambiarse despues.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {grupos.map((grupo) => (
+          <div key={grupo.id} className="grid gap-3 rounded-md border border-slate-200 p-4">
+            <div>
+              <p className="font-semibold text-slate-950">{grupo.nombre}</p>
+              <p className="mt-1 text-sm text-slate-600">Cupos disponibles: {grupo.cupos_disponibles} de {grupo.cupo_maximo}</p>
+            </div>
+            <Boton disabled={asignando || grupo.cupos_disponibles <= 0} cargando={asignando} onClick={() => onElegir(grupo.id)}>
+              Elegir grupo
+            </Boton>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function ListaExamenes({ examenes }) {
   const visibles = examenes.slice(0, 4)
 
@@ -129,6 +203,7 @@ function ListaExamenes({ examenes }) {
 }
 
 export default function DashboardAlumno() {
+  const queryClient = useQueryClient()
   const { usuario, refrescarPerfil } = useAuth()
   const navigate = useNavigate()
 
@@ -173,6 +248,30 @@ export default function DashboardAlumno() {
     enabled: Boolean(alumnoId),
   })
 
+  const opcionesGrupoQuery = useQuery({
+    queryKey: ['alumno', 'grupos', 'opciones', alumnoId],
+    queryFn: obtenerOpcionesGrupoAlumno,
+    enabled: Boolean(alumnoId),
+  })
+
+  const asignarGrupoMutation = useMutation({
+    mutationFn: asignarGrupoAlumno,
+    onSuccess: async () => {
+      toast.success('Grupo asignado correctamente.')
+      await refrescarPerfil()
+      await opcionesGrupoQuery.refetch()
+      queryClient.invalidateQueries({ queryKey: ['horarios', 'alumno', alumnoId] })
+      queryClient.invalidateQueries({ queryKey: ['asistencia-alumno'] })
+    },
+  })
+
+  useEffect(() => {
+    if (opcionesGrupoQuery.data?.estado !== 'auto_asignable') return
+    if (!asignarGrupoMutation.isIdle) return
+
+    asignarGrupoMutation.mutate({})
+  }, [asignarGrupoMutation, opcionesGrupoQuery.data?.estado])
+
   const horarios = horariosComoLista(horariosQuery.data)
   const proximaClase = buscarProximaClase(horarios)
   const asistencias = asistenciasQuery.data?.datos || []
@@ -180,7 +279,7 @@ export default function DashboardAlumno() {
   const pendientes = examenes.filter((examen) => !examen.ya_respondio).length
   const promedio = notasQuery.data?.promedio_final
   const notas = notasQuery.data?.notas_parciales || []
-  const error = perfilQuery.error || horariosQuery.error || claseActivaQuery.error || asistenciasQuery.error || examenesQuery.error || notasQuery.error
+  const error = perfilQuery.error || horariosQuery.error || claseActivaQuery.error || asistenciasQuery.error || examenesQuery.error || notasQuery.error || asignarGrupoMutation.error
 
   if (perfilQuery.isLoading) return <Loader texto="Cargando panel alumno..." />
 
@@ -224,6 +323,14 @@ export default function DashboardAlumno() {
           </div>
         </div>
       </section>
+
+      <PanelAsignacionGrupo
+        opciones={opcionesGrupoQuery.data}
+        cargando={opcionesGrupoQuery.isLoading}
+        error={opcionesGrupoQuery.error}
+        asignando={asignarGrupoMutation.isPending}
+        onElegir={(grupoId) => asignarGrupoMutation.mutate({ grupo_id: grupoId })}
+      />
 
       <div className="grid gap-4 md:grid-cols-4">
         <CardIndicador titulo="Horarios" valor={horarios.length} descripcion="Segun grupo asignado" icono={<CalendarDays className="h-5 w-5" />} />

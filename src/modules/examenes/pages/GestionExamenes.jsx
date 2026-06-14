@@ -63,6 +63,18 @@ function preguntasDeExamen(examen) {
   return [...(examen?.preguntas || [])].sort((a, b) => Number(a.id || 0) - Number(b.id || 0))
 }
 
+function materiasSinPreguntaActiva(examen) {
+  const materiasConPregunta = new Set(
+    preguntasDeExamen(examen)
+      .filter((pregunta) => pregunta.activa)
+      .map((pregunta) => Number(pregunta.materia?.id)),
+  )
+
+  return materiasDeExamen(examen)
+    .filter((materia) => !materiasConPregunta.has(Number(materia.materia_id)))
+    .map((materia) => materia.materia)
+}
+
 function puntajeAutomaticoEstimado(examen, materiaId) {
   const materia = materiasDeExamen(examen).find((item) => Number(item.materia_id) === Number(materiaId))
   const preguntasActuales = preguntasDeExamen(examen).filter((pregunta) => Number(pregunta.materia?.id) === Number(materiaId) && pregunta.activa).length
@@ -304,6 +316,7 @@ function FormularioPregunta({ examen, onGuardar, onCancelar, cargando }) {
 
 function DetalleExamen({ examen }) {
   if (!examen) return null
+  const materiasFaltantes = materiasSinPreguntaActiva(examen)
 
   return (
     <div className="grid gap-4">
@@ -321,6 +334,9 @@ function DetalleExamen({ examen }) {
           <div className="mt-1"><BadgeEstado estado={examen.habilitado ? 'habilitado' : 'no habilitado'} /></div>
         </div>
       </div>
+      {materiasFaltantes.length ? (
+        <MensajeError mensaje={`Para habilitar este examen falta registrar al menos una pregunta activa para: ${materiasFaltantes.join(', ')}.`} />
+      ) : null}
       <div>
         <h3 className="text-sm font-semibold text-slate-950">Porcentajes por materia</h3>
         <div className="mt-2 grid gap-2">
