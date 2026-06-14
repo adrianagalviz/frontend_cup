@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { BarChart3, Download, FileSpreadsheet, FileText, Mic, MicOff, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts'
 import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
 import EmptyState from '../../../components/common/EmptyState'
@@ -248,24 +248,41 @@ function TablaReporte({ filas, cargando }) {
 }
 
 function GraficoReporte({ reporte, filas }) {
+  const contenedorRef = useRef(null)
+  const [anchoGrafico, setAnchoGrafico] = useState(640)
   const datos = filas
     .map((fila) => ({ nombre: nombreFila(fila), valor: valorGrafico(fila, reporte.campoGrafico) }))
     .filter((item) => item.valor > 0)
     .slice(0, 10)
 
+  useEffect(() => {
+    const elemento = contenedorRef.current
+    if (!elemento) return undefined
+
+    const actualizarAncho = () => {
+      setAnchoGrafico(Math.max(320, Math.floor(elemento.clientWidth)))
+    }
+
+    actualizarAncho()
+    const observer = new ResizeObserver(actualizarAncho)
+    observer.observe(elemento)
+
+    return () => observer.disconnect()
+  }, [])
+
   if (!datos.length) return <EmptyState descripcion="No hay datos numericos suficientes para graficar este reporte." />
 
   return (
-    <div className="h-72 rounded-md border border-slate-200 bg-white p-4">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={datos}>
+    <div className="h-72 min-h-72 min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white p-4">
+      <div ref={contenedorRef} className="h-60 min-w-0">
+        <BarChart width={anchoGrafico} height={240} data={datos}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="nombre" tick={{ fontSize: 11 }} />
           <YAxis />
           <Tooltip />
           <Bar dataKey="valor" fill="#0369a1" radius={[4, 4, 0, 0]} />
         </BarChart>
-      </ResponsiveContainer>
+      </div>
     </div>
   )
 }
@@ -410,9 +427,13 @@ export default function ReportesAdministrativos() {
   })
 
   const exportarMutation = useMutation({
-    mutationFn: (formato) => exportarReporte(tipoReporte, params, formato),
+    mutationFn: (formato) => exportarReporte(tipoReporte, filtrosParaBackend(filtros, reporte), formato),
     onSuccess: (respuesta) => {
       setUltimaExportacion(respuesta)
+      if (respuesta?.guardado === false) {
+        toast.info('Reporte generado. Guardado cancelado por el usuario.')
+        return
+      }
       toast.success(`Reporte exportado en ${respuesta?.formato || 'formato solicitado'}.`)
     },
   })

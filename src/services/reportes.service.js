@@ -51,7 +51,7 @@ function urlPublicaBackend(ruta) {
 
 function normalizarExportacion(respuesta) {
   const archivo = respuesta?.archivo
-  const url = urlPublicaBackend(archivo?.ruta)
+  const url = urlPublicaBackend(archivo?.ruta) || archivo?.url
 
   return {
     ...respuesta,
@@ -60,6 +60,69 @@ function normalizarExportacion(respuesta) {
       url,
     },
   }
+}
+
+function tipoMimePorFormato(formato) {
+  if (formato === 'pdf') return 'application/pdf'
+  return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+}
+
+function extensionPorFormato(formato) {
+  return formato === 'pdf' ? 'pdf' : 'xlsx'
+}
+
+async function descargarBlob(url, formato) {
+  const respuesta = await fetch(url)
+
+  if (!respuesta.ok) {
+    throw new Error('No se pudo descargar el archivo generado.')
+  }
+
+  return respuesta.blob().then((blob) => (
+    blob.type ? blob : new Blob([blob], { type: tipoMimePorFormato(formato) })
+  ))
+}
+
+async function guardarArchivoExportado(url, nombreArchivo, formato) {
+  if (!url || typeof window === 'undefined') return false
+
+  const blob = await descargarBlob(url, formato)
+  const extension = extensionPorFormato(formato)
+  const nombre = nombreArchivo || `reporte.${extension}`
+
+  if ('showSaveFilePicker' in window) {
+    try {
+      const manejador = await window.showSaveFilePicker({
+        suggestedName: nombre,
+        types: [
+          {
+            description: formato === 'pdf' ? 'Documento PDF' : 'Libro de Excel',
+            accept: {
+              [tipoMimePorFormato(formato)]: [`.${extension}`],
+            },
+          },
+        ],
+      })
+      const writable = await manejador.createWritable()
+      await writable.write(blob)
+      await writable.close()
+      return true
+    } catch (error) {
+      if (error?.name === 'AbortError') return false
+      throw error
+    }
+  }
+
+  const blobUrl = window.URL.createObjectURL(blob)
+  const enlace = document.createElement('a')
+  enlace.href = blobUrl
+  enlace.download = nombre
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+  window.URL.revokeObjectURL(blobUrl)
+
+  return true
 }
 
 export async function generarReportePorComandoVoz(payload) {
@@ -87,15 +150,10 @@ export async function exportarReporte(tipo, params, formato = 'pdf') {
   const exportacion = normalizarExportacion(respuesta)
   const url = exportacion.archivo?.url
 
-  if (url && typeof window !== 'undefined') {
-    const enlace = document.createElement('a')
-    enlace.href = url
-    enlace.download = exportacion.archivo?.nombre || `reporte.${formato === 'pdf' ? 'pdf' : 'xlsx'}`
-    enlace.target = '_blank'
-    document.body.appendChild(enlace)
-    enlace.click()
-    enlace.remove()
-  }
+  const guardado = await guardarArchivoExportado(url, exportacion.archivo?.nombre, formato)
 
-  return exportacion
+  return {
+    ...exportacion,
+    guardado,
+  }
 }
