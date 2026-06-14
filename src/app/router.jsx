@@ -10,6 +10,7 @@ import ListarAlumnos from '../modules/alumnos/pages/ListarAlumnos'
 import AsistenciaAlumnos from '../modules/asistencia-alumnos/pages/AsistenciaAlumnos'
 import AsistenciaDocente from '../modules/asistencia-docente/pages/AsistenciaDocente'
 import GestionAsignaciones from '../modules/asignaciones/pages/GestionAsignaciones'
+import BitacoraSistema from '../modules/bitacora/pages/BitacoraSistema'
 import AccesoDenegado from '../modules/shared/pages/AccesoDenegado'
 import NoEncontrado from '../modules/shared/pages/NoEncontrado'
 import DashboardAdministrador from '../modules/dashboard/pages/DashboardAdministrador'
@@ -89,6 +90,7 @@ const router = createBrowserRouter([
       { path: 'admision', element: <AdmisionFinal /> },
       { path: 'reportes', element: <ReportesAdministrativos /> },
       { path: 'carga-masiva', element: <CargaMasiva /> },
+      { path: 'bitacora', element: <BitacoraSistema /> },
     ],
   },
   {

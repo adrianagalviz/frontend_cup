@@ -19,8 +19,3 @@ export function listarAprobados(params) {
 export function listarReprobados(params) {
   return get('/promedios/reprobados', { params })
 }
-
-export function asignarCarrerasPorAdmision(payload) {
-  return post('/admisiones/asignar-carreras', payload)
-}
-

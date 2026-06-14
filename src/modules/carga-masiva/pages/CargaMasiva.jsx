@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, FileSpreadsheet, FileText, RefreshCw, Search, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,6 +35,10 @@ function normalizarListado(respuesta) {
   return []
 }
 
+function normalizarDetalleCarga(respuesta) {
+  return respuesta?.carga || respuesta?.datos?.carga || null
+}
+
 function numero(valor) {
   const convertido = Number(valor)
   return Number.isFinite(convertido) ? convertido : 0
@@ -51,7 +55,6 @@ function textoDatosFila(datos) {
   if (!datos) return '-'
   if (typeof datos === 'string') return datos
   return Object.entries(datos)
-    .slice(0, 6)
     .map(([clave, valor]) => `${clave}: ${valor ?? '-'}`)
     .join(' | ')
 }
@@ -193,6 +196,7 @@ function FiltrosCargas({ filtros, onCambiar, onEnviar, onLimpiar }) {
 
 export default function CargaMasiva() {
   const queryClient = useQueryClient()
+  const resultadoRef = useRef(null)
   const [archivo, setArchivo] = useState(null)
   const [errorArchivo, setErrorArchivo] = useState('')
   const [filtros, setFiltros] = useState({ formato_archivo: '', estado: '', tipo_carga: '' })
@@ -228,8 +232,19 @@ export default function CargaMasiva() {
   })
 
   const cargas = normalizarListado(cargasQuery.data)
-  const detalle = detalleQuery.data?.carga || null
+  const detalle = normalizarDetalleCarga(detalleQuery.data)
   const detalles = Array.isArray(detalle?.detalles) ? detalle.detalles : []
+
+  const verDetalle = useCallback((carga) => {
+    if (!carga?.id) return
+
+    setCargaSeleccionadaId(carga.id)
+    queryClient.invalidateQueries({ queryKey: ['carga-masiva-detalle', carga.id] })
+
+    window.setTimeout(() => {
+      resultadoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }, [queryClient])
 
   const columnasCargas = useMemo(() => [
     {
@@ -260,13 +275,18 @@ export default function CargaMasiva() {
     {
       header: 'Acciones',
       cell: ({ row }) => (
-        <Boton variante="secundario" onClick={() => setCargaSeleccionadaId(row.original.id)}>
+        <Boton
+          variante={cargaSeleccionadaId === row.original.id ? 'primario' : 'secundario'}
+          cargando={detalleQuery.isFetching && cargaSeleccionadaId === row.original.id}
+          onClick={() => verDetalle(row.original)}
+          aria-label={`Ver detalle de ${row.original.nombre_archivo || 'la carga seleccionada'}`}
+        >
           <Eye className="h-4 w-4" />
-          Detalle
+          {cargaSeleccionadaId === row.original.id ? 'Viendo' : 'Detalle'}
         </Boton>
       ),
     },
-  ], [])
+  ], [cargaSeleccionadaId, detalleQuery.isFetching, verDetalle])
 
   const columnasDetalle = useMemo(() => [
     {
@@ -283,7 +303,13 @@ export default function CargaMasiva() {
     },
     {
       header: 'Datos de fila',
-      cell: ({ row }) => <span className="block max-w-xl truncate">{textoDatosFila(row.original.datos_fila)}</span>,
+      cell: ({ row }) => (
+        <div className="max-h-24 max-w-3xl overflow-auto rounded border border-slate-200 bg-slate-50 px-3 py-2">
+          <span className="block min-w-max whitespace-nowrap font-mono text-xs leading-5 text-slate-700">
+            {textoDatosFila(row.original.datos_fila)}
+          </span>
+        </div>
+      ),
     },
   ], [])
 
@@ -388,20 +414,26 @@ export default function CargaMasiva() {
         />
       </section>
 
-      <section className="grid gap-4">
+      <section ref={resultadoRef} className="scroll-mt-6 grid gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-950">Resultado de carga</h2>
-          <p className="mt-1 text-sm text-slate-600">Selecciona una carga del historial para ver totales, registros validos y errores por fila.</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {detalle
+              ? `Detalle de ${detalle.nombre_archivo || 'la carga seleccionada'}.`
+              : 'Selecciona una carga del historial para ver totales, registros validos y errores por fila.'}
+          </p>
         </div>
 
         {detalle ? <ResumenCarga carga={detalle} /> : null}
 
-        <TablaBase
-          columnas={columnasDetalle}
-          datos={detalles}
-          cargando={detalleQuery.isLoading}
-          mensajeVacio={cargaSeleccionadaId ? 'La carga seleccionada no tiene detalle de filas.' : 'Selecciona una carga para revisar su detalle.'}
-        />
+        <div className="max-h-[32rem] overflow-auto rounded-md border border-slate-200">
+          <TablaBase
+            columnas={columnasDetalle}
+            datos={detalles}
+            cargando={detalleQuery.isLoading}
+            mensajeVacio={cargaSeleccionadaId ? 'La carga seleccionada no tiene detalle de filas.' : 'Selecciona una carga para revisar su detalle.'}
+          />
+        </div>
       </section>
     </div>
   )

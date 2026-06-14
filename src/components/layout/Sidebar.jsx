@@ -13,6 +13,7 @@ import {
   Home,
   Landmark,
   LayoutGrid,
+  ScrollText,
   School,
   ShieldCheck,
   User,
@@ -65,6 +66,7 @@ const menuPorRol = {
       items: [
         { to: '/admin/reportes', label: 'Reportes', icon: FileText },
         { to: '/admin/carga-masiva', label: 'Carga masiva', icon: FileSpreadsheet },
+        { to: '/admin/bitacora', label: 'Bitacora', icon: ScrollText },
       ],
     },
   ],

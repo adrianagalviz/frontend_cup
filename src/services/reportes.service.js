@@ -1,4 +1,4 @@
-import { api, get, post } from '../lib/api'
+﻿import { api, get, post } from '../lib/api'
 import { API_BASE_URL } from '../config/api.config'
 
 export function reportePostulantes(params) {
@@ -112,31 +112,6 @@ async function guardarArchivoExportado(url, nombreArchivo, formato, ruta = null)
   try {
     const blob = await descargarBlob(url, formato, ruta)
 
-    if ('showSaveFilePicker' in window) {
-      try {
-        const manejador = await window.showSaveFilePicker({
-          suggestedName: nombre,
-          types: [
-            {
-              description: formato === 'pdf' ? 'Documento PDF' : 'Libro de Excel',
-              accept: {
-                [tipoMimePorFormato(formato)]: [`.${extension}`],
-              },
-            },
-          ],
-        })
-        const writable = await manejador.createWritable()
-        await writable.write(blob)
-        await writable.close()
-        return true
-      } catch (error) {
-        if (error?.name === 'AbortError') {
-          return false
-        }
-        console.warn('showSaveFilePicker falló o fue denegado. Usando descarga automática:', error)
-      }
-    }
-
     const blobUrl = window.URL.createObjectURL(blob)
     const enlace = document.createElement('a')
     enlace.href = blobUrl
@@ -147,6 +122,7 @@ async function guardarArchivoExportado(url, nombreArchivo, formato, ruta = null)
     window.URL.revokeObjectURL(blobUrl)
 
     return true
+
   } catch (error) {
     console.warn('Fallo al descargar el archivo como blob, usando descarga nativa directa:', error)
 
