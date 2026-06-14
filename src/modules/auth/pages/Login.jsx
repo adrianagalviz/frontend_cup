@@ -12,8 +12,6 @@ import CampoTexto from '../../../components/forms/CampoTexto'
 import { useAuth } from '../../../hooks/useAuth'
 import { obtenerRutaPorRol, ROLES } from '../../../lib/auth'
 import { aplicarErroresFormulario, obtenerMensajeError } from '../../../lib/errores'
-import { obtenerTokenGoogleFirebase } from '../../../lib/firebase'
-import BotonGoogle from '../components/BotonGoogle'
 
 const schema = z.object({
   tipo_login: z.enum(['tradicional', 'alumno']),
@@ -34,16 +32,15 @@ const schema = z.object({
     ctx.addIssue({
       code: 'custom',
       path: ['password'],
-      message: 'La contrasena es obligatoria.',
+      message: 'La contraseña es obligatoria.',
     })
   }
 })
 
 export default function Login() {
   const navigate = useNavigate()
-  const { autenticado, usuario, iniciarSesion, iniciarSesionAlumno, iniciarSesionFirebase } = useAuth()
+  const { autenticado, usuario, iniciarSesion, iniciarSesionAlumno } = useAuth()
   const [mensajeError, setMensajeError] = useState('')
-  const [cargandoGoogle, setCargandoGoogle] = useState(false)
   const {
     register,
     handleSubmit,
@@ -95,23 +92,6 @@ export default function Login() {
     }
   }
 
-  async function iniciarConGoogle() {
-    setMensajeError('')
-    setCargandoGoogle(true)
-
-    try {
-      const firebaseToken = await obtenerTokenGoogleFirebase()
-      const datos = await iniciarSesionFirebase(firebaseToken)
-
-      toast.success('Inicio de sesion con Google correcto.')
-      navigate(obtenerRutaPorRol(datos?.usuario?.rol), { replace: true })
-    } catch (err) {
-      setMensajeError(obtenerMensajeError(err))
-    } finally {
-      setCargandoGoogle(false)
-    }
-  }
-
   return (
     <form className="grid gap-4" onSubmit={handleSubmit(onSubmit)}>
       <div>
@@ -132,14 +112,14 @@ export default function Login() {
           onClick={() => seleccionarTipoLogin('tradicional')}
           className={`rounded-md px-3 py-2 text-sm font-semibold transition ${tipoLogin === 'tradicional' ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
         >
-          Usuario
+          Admin/Docente
         </button>
         <button
           type="button"
           onClick={() => seleccionarTipoLogin('alumno')}
           className={`rounded-md px-3 py-2 text-sm font-semibold transition ${tipoLogin === 'alumno' ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
         >
-          Alumno con codigo
+          Alumno
         </button>
       </div>
       <CampoTexto
@@ -152,7 +132,7 @@ export default function Login() {
         placeholder={tipoLogin === 'alumno' ? 'Ejemplo: 2026113541539' : 'admin o admin@cupficct.local'}
       />
       <CampoPassword
-        label={tipoLogin === 'alumno' ? 'Contrasena (CI)' : 'Contrasena'}
+        label={tipoLogin === 'alumno' ? 'Contraseña (CI)' : 'Contraseña'}
         name="password"
         register={register}
         error={errors.password}
@@ -160,12 +140,6 @@ export default function Login() {
         placeholder={tipoLogin === 'alumno' ? 'Numero de cedula de identidad' : undefined}
       />
       <Boton type="submit" cargando={isSubmitting}>Ingresar</Boton>
-      <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs font-medium text-slate-400">Google</span>
-        <span className="h-px flex-1 bg-slate-200" />
-      </div>
-      <BotonGoogle onClick={iniciarConGoogle} cargando={cargandoGoogle} />
     </form>
   )
 }

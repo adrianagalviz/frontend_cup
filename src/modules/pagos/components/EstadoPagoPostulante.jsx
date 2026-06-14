@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CreditCard, FileCheck2, LogIn, RefreshCw, ShieldCheck } from 'lucide-react'
+import { CreditCard, FileCheck2, LockKeyhole, LogIn, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
+import Input from '../../../components/common/Input'
 import Loader from '../../../components/common/Loader'
 import MensajeError from '../../../components/common/MensajeError'
+import Modal from '../../../components/common/Modal'
 import { obtenerMensajeError } from '../../../lib/errores'
 import { consultarEstadoPagoPublico, registrarPagoTemporalPostulante } from '../../../services/pagos.service'
 
@@ -13,9 +16,52 @@ function puedeReintentar(estado) {
   return estado?.puede_pagar_temporal && !estado?.existe_pago_pagado
 }
 
+const pagoInicial = {
+  numero_tarjeta: '',
+  nombre_titular: '',
+  fecha_vencimiento: '',
+  cvv: '',
+}
+
+function soloDigitos(valor, maximo) {
+  return valor.replace(/\D/g, '').slice(0, maximo)
+}
+
+function formatearVencimiento(valor) {
+  const digitos = soloDigitos(valor, 4)
+  if (digitos.length <= 2) return digitos
+
+  return `${digitos.slice(0, 2)}/${digitos.slice(2)}`
+}
+
+function validarPago(datos) {
+  const errores = {}
+
+  if (!/^\d{16}$/.test(datos.numero_tarjeta)) {
+    errores.numero_tarjeta = 'El numero de tarjeta debe tener 16 digitos.'
+  }
+
+  if (!datos.nombre_titular.trim()) {
+    errores.nombre_titular = 'El nombre del titular es obligatorio.'
+  }
+
+  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(datos.fecha_vencimiento)) {
+    errores.fecha_vencimiento = 'La fecha debe tener formato MM/AA.'
+  }
+
+  if (!/^\d{3}$/.test(datos.cvv)) {
+    errores.cvv = 'El CVV debe tener 3 digitos.'
+  }
+
+  return errores
+}
+
 export default function EstadoPagoPostulante({ postulanteId, titulo = 'Estado de pago' }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [modalPago, setModalPago] = useState(false)
+  const [datosPago, setDatosPago] = useState(pagoInicial)
+  const [erroresPago, setErroresPago] = useState({})
   const pagoQuery = useQuery({
     queryKey: ['pago-publico', postulanteId],
     queryFn: () => consultarEstadoPagoPublico(postulanteId),
@@ -27,10 +73,42 @@ export default function EstadoPagoPostulante({ postulanteId, titulo = 'Estado de
     mutationFn: () => registrarPagoTemporalPostulante(postulanteId),
     onSuccess: (respuesta) => {
       toast.success(respuesta?.mensaje || 'Pago registrado automaticamente.')
+      setModalPago(false)
+      setDatosPago(pagoInicial)
+      setErroresPago({})
       queryClient.invalidateQueries({ queryKey: ['pago-publico', postulanteId] })
       navigate('/login', { replace: true })
     },
   })
+
+  function cerrarModalPago() {
+    if (pagoTemporalMutation.isPending) return
+    setModalPago(false)
+    setErroresPago({})
+  }
+
+  function cambiarDatoPago(nombre, valor) {
+    const normalizado = nombre === 'numero_tarjeta'
+      ? soloDigitos(valor, 16)
+      : nombre === 'cvv'
+        ? soloDigitos(valor, 3)
+        : nombre === 'fecha_vencimiento'
+          ? formatearVencimiento(valor)
+          : valor
+
+    setDatosPago((actuales) => ({ ...actuales, [nombre]: normalizado }))
+    setErroresPago((actuales) => ({ ...actuales, [nombre]: undefined }))
+  }
+
+  function confirmarPago(evento) {
+    evento.preventDefault()
+    const errores = validarPago(datosPago)
+    setErroresPago(errores)
+
+    if (Object.keys(errores).length) return
+
+    pagoTemporalMutation.mutate()
+  }
 
   if (!postulanteId) return <MensajeError mensaje="No se recibio el identificador del postulante." />
   if (pagoQuery.isLoading) return <Loader texto="Consultando estado de pago..." />
@@ -100,11 +178,11 @@ export default function EstadoPagoPostulante({ postulanteId, titulo = 'Estado de
             <div className="grid gap-4 rounded-md border border-sky-200 bg-sky-50 p-4 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <p className="font-semibold text-slate-950">Pago de postulacion</p>
-                <p className="mt-1 text-sm text-slate-600">Presiona el boton para registrar el pago automaticamente en el backend. Despues volveras al login.</p>
+                <p className="mt-1 text-sm text-slate-600">Completa los datos de tu tarjeta para registrar el pago simulado. Despues volveras al login.</p>
               </div>
               <Boton
                 cargando={pagoTemporalMutation.isPending}
-                onClick={() => pagoTemporalMutation.mutate()}
+                onClick={() => setModalPago(true)}
                 className="w-full md:w-auto"
               >
                 <CreditCard className="h-4 w-4" />
@@ -119,6 +197,100 @@ export default function EstadoPagoPostulante({ postulanteId, titulo = 'Estado de
               Ir al login
             </Boton>
           ) : null}
+
+          <Modal
+            abierto={modalPago}
+            titulo="Pago de postulacion"
+            onCerrar={cerrarModalPago}
+            className="max-w-xl"
+            acciones={(
+              <>
+                <Boton variante="secundario" onClick={cerrarModalPago} disabled={pagoTemporalMutation.isPending}>Cancelar</Boton>
+                <Boton type="submit" form="formulario-pago-simulado" cargando={pagoTemporalMutation.isPending}>
+                  <LockKeyhole className="h-4 w-4" />
+                  Pagar postulacion
+                </Boton>
+              </>
+            )}
+          >
+            <form id="formulario-pago-simulado" onSubmit={confirmarPago} className="grid gap-4">
+              <div className="rounded-md bg-slate-950 p-4 text-white">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">CUP-FICCT</p>
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <p className="mt-8 font-mono text-lg tracking-wider">
+                  {datosPago.numero_tarjeta.padEnd(16, '*').replace(/(.{4})/g, '$1 ').trim()}
+                </p>
+                <div className="mt-5 flex items-end justify-between gap-4 text-xs">
+                  <div className="min-w-0">
+                    <p className="uppercase text-slate-400">Titular</p>
+                    <p className="truncate font-semibold">{datosPago.nombre_titular || 'Nombre del titular'}</p>
+                  </div>
+                  <div>
+                    <p className="uppercase text-slate-400">Vence</p>
+                    <p className="font-semibold">{datosPago.fecha_vencimiento || 'MM/AA'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                Numero de tarjeta
+                <Input
+                  value={datosPago.numero_tarjeta}
+                  onChange={(evento) => cambiarDatoPago('numero_tarjeta', evento.target.value)}
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  placeholder="0000000000000000"
+                  maxLength={16}
+                  error={erroresPago.numero_tarjeta}
+                />
+                {erroresPago.numero_tarjeta ? <span className="text-xs text-red-600">{erroresPago.numero_tarjeta}</span> : null}
+              </label>
+
+              <label className="grid gap-1 text-sm font-medium text-slate-700">
+                Nombre del titular
+                <Input
+                  value={datosPago.nombre_titular}
+                  onChange={(evento) => cambiarDatoPago('nombre_titular', evento.target.value)}
+                  autoComplete="cc-name"
+                  placeholder="Nombre como figura en la tarjeta"
+                  error={erroresPago.nombre_titular}
+                />
+                {erroresPago.nombre_titular ? <span className="text-xs text-red-600">{erroresPago.nombre_titular}</span> : null}
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
+                  Fecha de vencimiento
+                  <Input
+                    value={datosPago.fecha_vencimiento}
+                    onChange={(evento) => cambiarDatoPago('fecha_vencimiento', evento.target.value)}
+                    inputMode="numeric"
+                    autoComplete="cc-exp"
+                    placeholder="MM/AA"
+                    maxLength={5}
+                    error={erroresPago.fecha_vencimiento}
+                  />
+                  {erroresPago.fecha_vencimiento ? <span className="text-xs text-red-600">{erroresPago.fecha_vencimiento}</span> : null}
+                </label>
+
+                <label className="grid gap-1 text-sm font-medium text-slate-700">
+                  CVV
+                  <Input
+                    value={datosPago.cvv}
+                    onChange={(evento) => cambiarDatoPago('cvv', evento.target.value)}
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    placeholder="000"
+                    maxLength={3}
+                    error={erroresPago.cvv}
+                  />
+                  {erroresPago.cvv ? <span className="text-xs text-red-600">{erroresPago.cvv}</span> : null}
+                </label>
+              </div>
+            </form>
+          </Modal>
         </>
       ) : null}
     </section>
