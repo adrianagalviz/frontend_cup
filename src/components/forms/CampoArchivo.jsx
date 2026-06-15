@@ -1,4 +1,4 @@
-import { ImageUp, X } from 'lucide-react'
+import { FileUp, ImageUp, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import Boton from '../common/Boton'
 
@@ -10,6 +10,7 @@ export default function CampoArchivo({
   requerido = false,
   accept = 'image/*',
   ayuda = 'Formatos permitidos: JPG, PNG o WEBP.',
+  validarImagen = accept?.startsWith('image/'),
   ...props
 }) {
   const inputRef = useRef(null)
@@ -17,7 +18,7 @@ export default function CampoArchivo({
   const [archivo, setArchivo] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const registro = register(name)
-  const errorImagen = archivo && !archivo.type?.startsWith('image/')
+  const errorImagen = validarImagen && archivo && !archivo.type?.startsWith('image/')
 
   useEffect(() => {
     return () => {
@@ -89,7 +90,7 @@ export default function CampoArchivo({
             {previewUrl ? (
               <img src={previewUrl} alt={`Vista previa de ${archivo.name}`} className="h-full w-full object-cover" />
             ) : (
-              <ImageUp className="h-8 w-8 text-slate-400" />
+              validarImagen ? <ImageUp className="h-8 w-8 text-slate-400" /> : <FileUp className="h-8 w-8 text-slate-400" />
             )}
           </div>
           <div className="grid content-start gap-2">

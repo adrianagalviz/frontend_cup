@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import Boton from '../../../components/common/Boton'
+import CampoArchivo from '../../../components/forms/CampoArchivo'
 import CampoPassword from '../../../components/forms/CampoPassword'
 import CampoTexto from '../../../components/forms/CampoTexto'
 import { aplicarErroresFormulario } from '../../../lib/errores'
@@ -20,12 +21,22 @@ const schema = z.object({
   es_profesional_area: z.boolean().refine(Boolean, 'El docente debe ser profesional en el area.'),
   tiene_maestria: z.boolean().refine(Boolean, 'El docente debe tener maestria.'),
   tiene_diplomado_educacion_superior: z.boolean().refine(Boolean, 'El docente debe tener diplomado en educacion superior.'),
+  cv_pdf: z.any().optional(),
 }).superRefine((values, ctx) => {
   if (values.password && values.password.length > 0 && values.password.length < 8) {
     ctx.addIssue({
       code: 'custom',
       path: ['password'],
       message: 'La contrasena debe tener al menos 8 caracteres.',
+    })
+  }
+
+  const archivo = values.cv_pdf?.[0]
+  if (archivo && archivo.type !== 'application/pdf') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['cv_pdf'],
+      message: 'El CV debe ser un archivo PDF.',
     })
   }
 })
@@ -42,6 +53,7 @@ const valoresIniciales = {
   es_profesional_area: false,
   tiene_maestria: false,
   tiene_diplomado_educacion_superior: false,
+  cv_pdf: undefined,
 }
 
 function valoresDesdeDocente(docente) {
@@ -60,7 +72,44 @@ function valoresDesdeDocente(docente) {
     es_profesional_area: Boolean(docente.es_profesional_area),
     tiene_maestria: Boolean(docente.tiene_maestria),
     tiene_diplomado_educacion_superior: Boolean(docente.tiene_diplomado_educacion_superior),
+    cv_pdf: undefined,
   }
+}
+
+function prepararPayload(values) {
+  const payload = {
+    cedula_identidad: values.cedula_identidad,
+    nombres: values.nombres,
+    apellido_paterno: values.apellido_paterno,
+    apellido_materno: values.apellido_materno,
+    celular: values.celular,
+    correo: values.correo,
+    es_profesional_area: values.es_profesional_area,
+    tiene_maestria: values.tiene_maestria,
+    tiene_diplomado_educacion_superior: values.tiene_diplomado_educacion_superior,
+  }
+
+  if (values.nombre_usuario) {
+    payload.nombre_usuario = values.nombre_usuario
+  }
+
+  if (values.password) {
+    payload.password = values.password
+  }
+
+  const archivoCv = values.cv_pdf?.[0]
+
+  if (!archivoCv) {
+    return payload
+  }
+
+  const formData = new FormData()
+  Object.entries(payload).forEach(([key, value]) => {
+    formData.append(key, typeof value === 'boolean' ? (value ? '1' : '0') : value)
+  })
+  formData.append('cv_pdf', archivoCv)
+
+  return formData
 }
 
 function CampoCheckbox({ label, name, register, error }) {
@@ -98,27 +147,7 @@ export default function FormularioDocente({ docente, onGuardar, onCancelar, carg
 
   async function enviar(values) {
     try {
-      const payload = {
-        cedula_identidad: values.cedula_identidad,
-        nombres: values.nombres,
-        apellido_paterno: values.apellido_paterno,
-        apellido_materno: values.apellido_materno,
-        celular: values.celular,
-        correo: values.correo,
-        es_profesional_area: values.es_profesional_area,
-        tiene_maestria: values.tiene_maestria,
-        tiene_diplomado_educacion_superior: values.tiene_diplomado_educacion_superior,
-      }
-
-      if (values.nombre_usuario) {
-        payload.nombre_usuario = values.nombre_usuario
-      }
-
-      if (values.password) {
-        payload.password = values.password
-      }
-
-      await onGuardar(payload)
+      await onGuardar(prepararPayload(values))
     } catch (error) {
       aplicarErroresFormulario(error, setError)
     }
@@ -136,6 +165,22 @@ export default function FormularioDocente({ docente, onGuardar, onCancelar, carg
         <CampoTexto label="Nombre de usuario" name="nombre_usuario" register={register} error={errors.nombre_usuario} placeholder="docente_CI si se deja vacio" />
         <CampoPassword label={editando ? 'Nueva contrasena' : 'Contrasena'} name="password" register={register} error={errors.password} />
       </div>
+
+      {editando && docente?.cv_pdf?.tiene_pdf ? (
+        <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          CV actual: <span className="font-semibold text-slate-900">{docente.cv_pdf.nombre_original || 'CV registrado'}</span>
+        </p>
+      ) : null}
+
+      <CampoArchivo
+        label="PDF del CV"
+        name="cv_pdf"
+        register={register}
+        error={errors.cv_pdf}
+        accept="application/pdf"
+        ayuda={editando ? 'Opcional. Si seleccionas un PDF, reemplazara el CV actual.' : 'Opcional. Formato permitido: PDF hasta 10 MB.'}
+        validarImagen={false}
+      />
 
       <div className="grid gap-3">
         <CampoCheckbox label="Profesional en el area" name="es_profesional_area" register={register} error={errors.es_profesional_area} />

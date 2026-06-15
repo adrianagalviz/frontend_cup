@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, Eye, PowerOff, Plus, Search } from 'lucide-react'
+import { Download, Edit, Eye, FileText, PowerOff, Plus, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import AccionesTabla from '../../../components/tables/AccionesTabla'
 import BadgeEstado from '../../../components/common/BadgeEstado'
@@ -13,7 +13,7 @@ import Select from '../../../components/common/Select'
 import TablaBase from '../../../components/tables/TablaBase'
 import PaginacionTabla from '../../../components/tables/PaginacionTabla'
 import Breadcrumb from '../../../components/layout/Breadcrumb'
-import { crearDocente, editarDocente, eliminarDocente, listarDocentes, verDocente } from '../../../services/docentes.service'
+import { crearDocente, descargarCvDocente, editarDocente, eliminarDocente, listarDocentes, verDocente } from '../../../services/docentes.service'
 import { obtenerMensajeError } from '../../../lib/errores'
 import FormularioDocente from '../components/FormularioDocente'
 
@@ -53,10 +53,11 @@ function ListaSimple({ titulo, items, render }) {
   )
 }
 
-function DetalleDocente({ docente }) {
+function DetalleDocente({ docente, onVerCv, onDescargarCv }) {
   if (!docente) return null
 
   const asignaciones = docente.asignaciones || {}
+  const tieneCvPdf = Boolean(docente.cv_pdf?.tiene_pdf || docente.cv_pdf?.url)
 
   return (
     <div className="grid max-h-[72vh] gap-5 overflow-y-auto pr-1">
@@ -79,6 +80,26 @@ function DetalleDocente({ docente }) {
           <FilaDato etiqueta="Maestria" valor={siNo(docente.tiene_maestria)} />
           <FilaDato etiqueta="Diplomado educacion superior" valor={siNo(docente.tiene_diplomado_educacion_superior)} />
         </dl>
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase text-slate-500">PDF del CV</p>
+              <p className="mt-1 break-all text-sm font-semibold text-slate-900">{tieneCvPdf ? docente.cv_pdf?.nombre_original || 'CV registrado' : 'Sin PDF registrado'}</p>
+            </div>
+            {tieneCvPdf ? (
+              <div className="flex flex-wrap gap-2">
+                <Boton variante="secundario" className="px-3" onClick={() => onVerCv(docente)}>
+                  <FileText className="h-4 w-4" />
+                  Ver PDF
+                </Boton>
+                <Boton variante="secundario" className="px-3" onClick={() => onDescargarCv(docente)}>
+                  <Download className="h-4 w-4" />
+                  Descargar
+                </Boton>
+              </div>
+            ) : null}
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-3">
@@ -141,41 +162,48 @@ export default function ListarDocentes() {
   const meta = docentesQuery.data?.meta || { pagina_actual: pagina, ultima_pagina: 1, total: docentes.length }
   const docenteDetalle = detalleQuery.data?.docente
 
-  const invalidarDocentes = () => queryClient.invalidateQueries({ queryKey: ['docentes'] })
+  const invalidarDocentes = (docenteActualizado) => {
+    queryClient.invalidateQueries({ queryKey: ['docentes'] })
+
+    if (docenteActualizado?.id) {
+      queryClient.invalidateQueries({ queryKey: ['docentes', 'detalle', docenteActualizado.id] })
+      queryClient.setQueryData(['docentes', 'detalle', docenteActualizado.id], { docente: docenteActualizado })
+    }
+  }
 
   const crearMutation = useMutation({
     mutationFn: crearDocente,
-    onSuccess: () => {
+    onSuccess: (respuesta) => {
       toast.success('Docente registrado correctamente.')
       setModalFormulario(false)
       setDocenteEditando(null)
-      invalidarDocentes()
+      invalidarDocentes(respuesta?.docente)
     },
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
 
   const editarMutation = useMutation({
     mutationFn: ({ id, payload }) => editarDocente(id, payload),
-    onSuccess: () => {
+    onSuccess: (respuesta) => {
       toast.success('Docente actualizado correctamente.')
       setModalFormulario(false)
       setDocenteEditando(null)
-      invalidarDocentes()
+      invalidarDocentes(respuesta?.docente)
     },
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
 
   const desactivarMutation = useMutation({
     mutationFn: eliminarDocente,
-    onSuccess: () => {
+    onSuccess: (respuesta) => {
       toast.success('Docente desactivado correctamente.')
       setDocenteDesactivar(null)
-      invalidarDocentes()
+      invalidarDocentes(respuesta?.docente)
     },
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
 
-  const columnas = useMemo(() => [
+  const columnas = [
     {
       header: 'Docente',
       cell: ({ row }) => (
@@ -229,7 +257,7 @@ export default function ListarDocentes() {
         )
       },
     },
-  ], [])
+  ]
 
   function aplicarFiltros(event) {
     event.preventDefault()
@@ -256,6 +284,7 @@ export default function ListarDocentes() {
 
   function abrirDetalle(id) {
     setMensajeError('')
+    queryClient.invalidateQueries({ queryKey: ['docentes', 'detalle', id] })
     setDocenteDetalleId(id)
   }
 
@@ -268,6 +297,21 @@ export default function ListarDocentes() {
     }
 
     await crearMutation.mutateAsync(payload)
+  }
+
+  async function abrirCvPdf(docente) {
+    const url = docente.cv_pdf?.url
+
+    if (!url) {
+      toast.error('El docente no tiene PDF de CV registrado.')
+      return
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  function descargarCvPdf(docente) {
+    descargarCvDocente(docente, docente.cv_pdf?.nombre_original || `cv-docente-${docente.id}.pdf`)
   }
 
   const totalPaginas = Number(meta.ultima_pagina || 1)
@@ -351,7 +395,7 @@ export default function ListarDocentes() {
         className="max-w-4xl"
       >
         {detalleQuery.error ? <MensajeError mensaje={obtenerMensajeError(detalleQuery.error)} /> : null}
-        {detalleQuery.isLoading ? <p>Cargando detalle...</p> : <DetalleDocente docente={docenteDetalle} />}
+        {detalleQuery.isLoading ? <p>Cargando detalle...</p> : <DetalleDocente docente={docenteDetalle} onVerCv={abrirCvPdf} onDescargarCv={descargarCvPdf} />}
       </Modal>
 
       <ConfirmDialog

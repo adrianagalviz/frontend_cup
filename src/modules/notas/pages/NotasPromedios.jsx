@@ -13,8 +13,9 @@ import TablaBase from '../../../components/tables/TablaBase'
 import Breadcrumb from '../../../components/layout/Breadcrumb'
 import { useAuth } from '../../../hooks/useAuth'
 import { obtenerMensajeError } from '../../../lib/errores'
-import { calcularPromedios, listarNotasAlumno, listarPromedios } from '../../../services/notas.service'
+import { calcularPromedios, listarNotasAlumno } from '../../../services/notas.service'
 import { listarGestiones } from '../../../services/gestionAcademica.service'
+import { listarAlumnos } from '../../../services/alumnos.service'
 
 function texto(valor, alternativo = '-') {
   return valor === null || valor === undefined || valor === '' ? alternativo : valor
@@ -30,6 +31,10 @@ function nombreGestion(gestion) {
 
 function estadoVisual(promedio) {
   return promedio?.estado_final || 'pendiente'
+}
+
+function notaPorParcial(notas, parcial) {
+  return notas.find((nota) => Number(nota.numero_parcial) === parcial)?.nota
 }
 
 function TarjetaDato({ etiqueta, valor, estado }) {
@@ -88,8 +93,33 @@ function VistaAdministrativa() {
   const [gestionCalcular, setGestionCalcular] = useState(null)
 
   const promediosQuery = useQuery({
-    queryKey: ['promedios-admin', params],
-    queryFn: () => listarPromedios(params),
+    queryKey: ['notas-admin-alumnos', params],
+    queryFn: async () => {
+      const respuestaAlumnos = await listarAlumnos(params)
+      const alumnos = respuestaAlumnos?.datos || []
+      const registros = await Promise.all(alumnos.map(async (alumno) => {
+        const detalleNotas = await listarNotasAlumno(alumno.id)
+        const notas = detalleNotas?.notas_parciales || []
+        const promedio = detalleNotas?.promedio_final || alumno.promedio_final
+
+        return {
+          id: alumno.id,
+          alumno,
+          gestion_academica: alumno.gestion_academica,
+          parcial_1: promedio?.parcial_1 ?? notaPorParcial(notas, 1),
+          parcial_2: promedio?.parcial_2 ?? notaPorParcial(notas, 2),
+          parcial_3: promedio?.parcial_3 ?? notaPorParcial(notas, 3),
+          promedio: promedio?.promedio,
+          estado_final: promedio?.estado_final || alumno.estado_academico || 'activo',
+          notas_parciales: notas,
+        }
+      }))
+
+      return {
+        datos: registros,
+        meta: respuestaAlumnos?.meta,
+      }
+    },
   })
 
   const gestionesQuery = useQuery({
@@ -103,14 +133,14 @@ function VistaAdministrativa() {
   const total = meta?.total ?? promedios.length
   const aprobados = promedios.filter((promedio) => promedio.estado_final === 'aprobado').length
   const reprobados = promedios.filter((promedio) => promedio.estado_final === 'reprobado').length
-  const pendientes = promedios.filter((promedio) => !promedio.estado_final).length
+  const pendientes = promedios.filter((promedio) => promedio.estado_final === 'activo' || promedio.estado_final === 'pendiente').length
 
   const calcularMutation = useMutation({
     mutationFn: (gestion) => calcularPromedios({ gestion_academica_id: Number(gestion.id) }),
     onSuccess: (respuesta) => {
       toast.success(`Promedios calculados: ${respuesta?.cantidad_calculada || 0}.`)
       setGestionCalcular(null)
-      queryClient.invalidateQueries({ queryKey: ['promedios-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['notas-admin-alumnos'] })
     },
   })
 
@@ -123,7 +153,7 @@ function VistaAdministrativa() {
     setParams({
       por_pagina: 100,
       gestion_academica_id: filtros.gestion_academica_id || undefined,
-      estado_final: filtros.estado_final || undefined,
+      estado_academico: filtros.estado_final || undefined,
     })
   }
 
@@ -160,6 +190,7 @@ function VistaAdministrativa() {
           Estado
           <Select value={filtros.estado_final} onChange={(evento) => cambiarFiltro('estado_final', evento.target.value)}>
             <option value="">Todos</option>
+            <option value="activo">Activo</option>
             <option value="aprobado">Aprobado</option>
             <option value="reprobado">Reprobado</option>
           </Select>
