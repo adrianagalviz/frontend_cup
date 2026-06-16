@@ -2,6 +2,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { GraduationCap, LogIn, ShieldUser, UserPlus } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -93,32 +94,40 @@ export default function Login() {
   }
 
   return (
-    <form className="grid gap-4" onSubmit={handleSubmit(onSubmit)}>
-      <div>
-        <h2 className="text-xl font-bold text-slate-950">Iniciar sesion</h2>
-        <p className="mt-1 text-sm text-slate-500">Acceso para administrador, docente o alumno.</p>
+    <form className="grid gap-5" onSubmit={handleSubmit(onSubmit)}>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-sky-700 text-white shadow-sm">
+            <LogIn className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <h2 className="text-2xl font-bold text-slate-950">Iniciar sesion</h2>
+        </div>
+        <p className="text-sm font-medium text-slate-600">Acceso para administrador, docente o alumno.</p>
       </div>
       <Link
         to="/postulantes/registro"
-        className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-center text-sm font-semibold text-sky-800 transition hover:border-sky-300 hover:bg-sky-100"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-sky-200 bg-sky-50/90 px-3 py-2 text-center text-sm font-semibold text-sky-800 shadow-sm transition hover:border-sky-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
       >
+        <UserPlus className="h-4 w-4" aria-hidden="true" />
         Registrarme como postulante
       </Link>
       {mensajeError ? <MensajeError mensaje={mensajeError} /> : null}
       <input type="hidden" {...register('tipo_login')} />
-      <div className="grid grid-cols-2 gap-2 rounded-md bg-slate-100 p-1">
+      <div className="grid grid-cols-2 gap-2 rounded-md bg-slate-100/90 p-1.5 shadow-inner">
         <button
           type="button"
           onClick={() => seleccionarTipoLogin('tradicional')}
-          className={`rounded-md px-3 py-2 text-sm font-semibold transition ${tipoLogin === 'tradicional' ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${tipoLogin === 'tradicional' ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:bg-white/60 hover:text-slate-950'}`}
         >
+          <ShieldUser className="h-4 w-4" aria-hidden="true" />
           Admin/Docente
         </button>
         <button
           type="button"
           onClick={() => seleccionarTipoLogin('alumno')}
-          className={`rounded-md px-3 py-2 text-sm font-semibold transition ${tipoLogin === 'alumno' ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+          className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${tipoLogin === 'alumno' ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:bg-white/60 hover:text-slate-950'}`}
         >
+          <GraduationCap className="h-4 w-4" aria-hidden="true" />
           Alumno
         </button>
       </div>
@@ -130,6 +139,7 @@ export default function Login() {
         autoComplete="username"
         requerido
         placeholder={tipoLogin === 'alumno' ? 'Ejemplo: 2026113541539' : 'admin o admin@cupficct.local'}
+        className="min-h-12 bg-white/95 shadow-sm"
       />
       <CampoPassword
         label={tipoLogin === 'alumno' ? 'Contraseña (CI)' : 'Contraseña'}
@@ -138,8 +148,11 @@ export default function Login() {
         error={errors.password}
         requerido
         placeholder={tipoLogin === 'alumno' ? 'Numero de cedula de identidad' : undefined}
+        className="min-h-12 bg-white/95 shadow-sm"
       />
-      <Boton type="submit" cargando={isSubmitting}>Ingresar</Boton>
+      <Boton type="submit" cargando={isSubmitting} className="min-h-12 shadow-md shadow-sky-950/15">
+        Ingresar
+      </Boton>
     </form>
   )
 }
