@@ -23,3 +23,10 @@ export async function cerrarSesion() {
 export async function actualizarConfiguracionVisual(payload) {
   return patch('/auth/configuracion-visual', payload)
 }
+
+export async function subirCvDocentePerfil(file) {
+  const formData = new FormData()
+  formData.append('cv_pdf', file)
+
+  return post('/auth/perfil/docente/cv', formData)
+}

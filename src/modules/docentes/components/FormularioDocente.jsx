@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import Boton from '../../../components/common/Boton'
+import Select from '../../../components/common/Select'
 import CampoArchivo from '../../../components/forms/CampoArchivo'
 import CampoPassword from '../../../components/forms/CampoPassword'
 import CampoTexto from '../../../components/forms/CampoTexto'
@@ -76,6 +77,15 @@ function valoresDesdeDocente(docente) {
   }
 }
 
+function asignacionVacia() {
+  return {
+    gestion_academica_id: '',
+    grupo_id: '',
+    materia_id: '',
+    horario_clase_id: '',
+  }
+}
+
 function prepararPayload(values) {
   const payload = {
     cedula_identidad: values.cedula_identidad,
@@ -112,6 +122,19 @@ function prepararPayload(values) {
   return formData
 }
 
+function SelectAsignacion({ label, value, onChange, options, error }) {
+  return (
+    <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+      <span>{label}</span>
+      <Select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">Seleccionar</option>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </Select>
+      {error ? <span className="text-xs font-normal text-red-600">{error}</span> : null}
+    </label>
+  )
+}
+
 function CampoCheckbox({ label, name, register, error }) {
   return (
     <label className={`flex min-h-11 items-start gap-3 rounded-md border px-3 py-2 text-sm ${error ? 'border-red-300 bg-red-50 text-red-700' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
@@ -128,8 +151,19 @@ function CampoCheckbox({ label, name, register, error }) {
   )
 }
 
-export default function FormularioDocente({ docente, onGuardar, onCancelar, cargando = false }) {
+export default function FormularioDocente({
+  docente,
+  onGuardar,
+  onCancelar,
+  cargando = false,
+  materias = [],
+  grupos = [],
+  gestiones = [],
+  horarios = [],
+}) {
   const editando = Boolean(docente)
+  const [asignacionInicial, setAsignacionInicial] = useState(asignacionVacia)
+  const [erroresAsignacion, setErroresAsignacion] = useState({})
   const {
     register,
     handleSubmit,
@@ -145,10 +179,48 @@ export default function FormularioDocente({ docente, onGuardar, onCancelar, carg
     reset(valoresDesdeDocente(docente))
   }, [docente, reset])
 
+  const horariosFiltrados = horarios.filter((horario) => {
+    if (asignacionInicial.gestion_academica_id && String(horario.gestion_academica?.id) !== String(asignacionInicial.gestion_academica_id)) return false
+    if (asignacionInicial.grupo_id && String(horario.grupo?.id) !== String(asignacionInicial.grupo_id)) return false
+    if (asignacionInicial.materia_id && String(horario.materia?.id) !== String(asignacionInicial.materia_id)) return false
+    return true
+  })
+
+  function actualizarAsignacion(nombre, valor) {
+    setAsignacionInicial((actual) => ({
+      ...actual,
+      [nombre]: valor,
+      ...(nombre === 'gestion_academica_id' || nombre === 'grupo_id' || nombre === 'materia_id' ? { horario_clase_id: '' } : {}),
+    }))
+    setErroresAsignacion((actual) => ({ ...actual, [nombre]: '' }))
+  }
+
+  function obtenerAsignacionValida() {
+    if (editando) return null
+
+    const valores = Object.values(asignacionInicial)
+    const tieneAlguno = valores.some(Boolean)
+
+    if (!tieneAlguno) return null
+
+    const errores = {}
+    Object.entries(asignacionInicial).forEach(([campo, valor]) => {
+      if (!valor) errores[campo] = 'Completa este campo para crear la asignacion inicial.'
+    })
+
+    if (Object.keys(errores).length) {
+      setErroresAsignacion(errores)
+      throw new Error('Completa todos los datos de la asignacion inicial o dejalos vacios.')
+    }
+
+    return Object.fromEntries(Object.entries(asignacionInicial).map(([campo, valor]) => [campo, Number(valor)]))
+  }
+
   async function enviar(values) {
     try {
-      await onGuardar(prepararPayload(values))
+      await onGuardar(prepararPayload(values), obtenerAsignacionValida())
     } catch (error) {
+      if (error.message?.includes('asignacion inicial')) return
       aplicarErroresFormulario(error, setError)
     }
   }
@@ -187,6 +259,48 @@ export default function FormularioDocente({ docente, onGuardar, onCancelar, carg
         <CampoCheckbox label="Maestria" name="tiene_maestria" register={register} error={errors.tiene_maestria} />
         <CampoCheckbox label="Diplomado en educacion superior" name="tiene_diplomado_educacion_superior" register={register} error={errors.tiene_diplomado_educacion_superior} />
       </div>
+
+      {!editando ? (
+        <section className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-950">Asignacion inicial</h3>
+            <p className="mt-1 text-xs text-slate-500">Opcional. Si llenas un campo, completa todos para crear la asignacion al registrar el docente.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <SelectAsignacion
+              label="Gestion academica"
+              value={asignacionInicial.gestion_academica_id}
+              onChange={(value) => actualizarAsignacion('gestion_academica_id', value)}
+              error={erroresAsignacion.gestion_academica_id}
+              options={gestiones.map((gestion) => ({ value: gestion.id, label: gestion.nombre }))}
+            />
+            <SelectAsignacion
+              label="Grupo"
+              value={asignacionInicial.grupo_id}
+              onChange={(value) => actualizarAsignacion('grupo_id', value)}
+              error={erroresAsignacion.grupo_id}
+              options={grupos.map((grupo) => ({ value: grupo.id, label: `${grupo.nombre} - ${grupo.gestion_academica?.nombre || 'Sin gestion'}` }))}
+            />
+            <SelectAsignacion
+              label="Materia"
+              value={asignacionInicial.materia_id}
+              onChange={(value) => actualizarAsignacion('materia_id', value)}
+              error={erroresAsignacion.materia_id}
+              options={materias.map((materia) => ({ value: materia.id, label: materia.nombre }))}
+            />
+            <SelectAsignacion
+              label="Horario de clase"
+              value={asignacionInicial.horario_clase_id}
+              onChange={(value) => actualizarAsignacion('horario_clase_id', value)}
+              error={erroresAsignacion.horario_clase_id}
+              options={horariosFiltrados.map((horario) => ({
+                value: horario.id,
+                label: `${horario.dia?.nombre || '-'} ${horario.hora_inicio} - ${horario.hora_fin} | ${horario.aula?.ubicacion || 'Sin aula'}`,
+              }))}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <div className="flex justify-end gap-3">
         <Boton variante="secundario" onClick={onCancelar}>Cancelar</Boton>

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Copy } from 'lucide-react'
+import { Copy, Download, FileText, Upload } from 'lucide-react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
@@ -8,6 +9,8 @@ import MensajeError from '../../../components/common/MensajeError'
 import Breadcrumb from '../../../components/layout/Breadcrumb'
 import { useAuth } from '../../../hooks/useAuth'
 import { obtenerMensajeError } from '../../../lib/errores'
+import { subirCvDocentePerfil } from '../../../services/auth.service'
+import { descargarCvDocente } from '../../../services/docentes.service'
 
 function FilaDato({ etiqueta, valor }) {
   if (valor === null || valor === undefined || valor === '') return null
@@ -58,6 +61,101 @@ function DatosRol({ usuario }) {
   }
 
   return null
+}
+
+function CvDocente({ docente, onActualizado }) {
+  const [archivo, setArchivo] = useState(null)
+  const [subiendo, setSubiendo] = useState(false)
+  const tieneCv = Boolean(docente?.cv_pdf?.tiene_pdf || docente?.cv_pdf?.url)
+
+  function cambiarArchivo(event) {
+    const seleccionado = event.target.files?.[0] || null
+
+    if (seleccionado && seleccionado.type !== 'application/pdf') {
+      toast.error('El CV debe ser un archivo PDF.')
+      event.target.value = ''
+      setArchivo(null)
+      return
+    }
+
+    setArchivo(seleccionado)
+  }
+
+  async function subir(event) {
+    event.preventDefault()
+
+    if (!archivo) {
+      toast.error('Selecciona un PDF para subir.')
+      return
+    }
+
+    try {
+      setSubiendo(true)
+      await subirCvDocentePerfil(archivo)
+      toast.success('CV subido correctamente.')
+      setArchivo(null)
+      await onActualizado()
+    } catch (error) {
+      toast.error(obtenerMensajeError(error))
+    } finally {
+      setSubiendo(false)
+    }
+  }
+
+  function verCv() {
+    if (!docente?.cv_pdf?.url) {
+      toast.error('No existe un CV registrado.')
+      return
+    }
+
+    window.open(docente.cv_pdf.url, '_blank', 'noopener,noreferrer')
+  }
+
+  function descargarCv() {
+    descargarCvDocente(docente, docente?.cv_pdf?.nombre_original || `cv-docente-${docente?.id}.pdf`)
+  }
+
+  return (
+    <section className="grid gap-3 rounded-md border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-slate-950">PDF del CV</h2>
+          <p className="mt-1 break-all text-sm text-slate-600">{tieneCv ? docente.cv_pdf?.nombre_original || 'CV registrado' : 'Aun no subiste tu CV.'}</p>
+        </div>
+        {tieneCv ? (
+          <div className="flex flex-wrap gap-2">
+            <Boton variante="secundario" onClick={verCv}>
+              <FileText className="h-4 w-4" />
+              Ver PDF
+            </Boton>
+            <Boton variante="secundario" onClick={descargarCv}>
+              <Download className="h-4 w-4" />
+              Descargar
+            </Boton>
+          </div>
+        ) : null}
+      </div>
+
+      <form className="grid gap-3 md:grid-cols-[1fr_auto]" onSubmit={subir}>
+        <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+          <span>{tieneCv ? 'Reemplazar CV' : 'Subir CV'}</span>
+          <input
+            type="file"
+            accept="application/pdf"
+            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700"
+            onChange={cambiarArchivo}
+          />
+          <span className="text-xs font-normal text-slate-500">Formato permitido: PDF hasta 10 MB.</span>
+        </label>
+        <div className="flex items-end">
+          <Boton type="submit" cargando={subiendo} disabled={!archivo}>
+            <Upload className="h-4 w-4" />
+            Subir CV
+          </Boton>
+        </div>
+      </form>
+    </section>
+  )
 }
 
 function CodigoAlumno({ codigo }) {
@@ -137,6 +235,8 @@ export default function PerfilAutenticado() {
           <DatosRol usuario={perfil} />
         </div>
       </section>
+
+      {perfil?.rol === 'docente' ? <CvDocente docente={perfil?.datos_rol?.docente} onActualizado={refrescarPerfil} /> : null}
     </div>
   )
 }

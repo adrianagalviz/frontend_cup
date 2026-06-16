@@ -13,7 +13,12 @@ import Select from '../../../components/common/Select'
 import TablaBase from '../../../components/tables/TablaBase'
 import PaginacionTabla from '../../../components/tables/PaginacionTabla'
 import Breadcrumb from '../../../components/layout/Breadcrumb'
+import { crearAsignacion } from '../../../services/asignaciones.service'
 import { crearDocente, descargarCvDocente, editarDocente, eliminarDocente, listarDocentes, verDocente } from '../../../services/docentes.service'
+import { listarGestiones } from '../../../services/gestionAcademica.service'
+import { listarGrupos } from '../../../services/grupos.service'
+import { listarHorarios } from '../../../services/horarios.service'
+import { listarMaterias } from '../../../services/materias.service'
 import { obtenerMensajeError } from '../../../lib/errores'
 import FormularioDocente from '../components/FormularioDocente'
 
@@ -157,10 +162,18 @@ export default function ListarDocentes() {
     queryFn: () => verDocente(docenteDetalleId),
     enabled: Boolean(docenteDetalleId),
   })
+  const gruposQuery = useQuery({ queryKey: ['grupos', 'docentes-formulario'], queryFn: () => listarGrupos({ activo: 'true', por_pagina: 100 }) })
+  const materiasQuery = useQuery({ queryKey: ['materias', 'docentes-formulario'], queryFn: () => listarMaterias() })
+  const gestionesQuery = useQuery({ queryKey: ['gestiones-academicas', 'docentes-formulario'], queryFn: () => listarGestiones() })
+  const horariosQuery = useQuery({ queryKey: ['horarios', 'docentes-formulario'], queryFn: () => listarHorarios({ activo: 'true', por_pagina: 100 }) })
 
   const docentes = docentesQuery.data?.datos || []
   const meta = docentesQuery.data?.meta || { pagina_actual: pagina, ultima_pagina: 1, total: docentes.length }
   const docenteDetalle = detalleQuery.data?.docente
+  const grupos = gruposQuery.data?.datos || []
+  const materias = materiasQuery.data?.materias || []
+  const gestiones = gestionesQuery.data || []
+  const horarios = horariosQuery.data?.datos || []
 
   const invalidarDocentes = (docenteActualizado) => {
     queryClient.invalidateQueries({ queryKey: ['docentes'] })
@@ -199,6 +212,15 @@ export default function ListarDocentes() {
       toast.success('Docente desactivado correctamente.')
       setDocenteDesactivar(null)
       invalidarDocentes(respuesta?.docente)
+    },
+    onError: (error) => setMensajeError(obtenerMensajeError(error)),
+  })
+
+  const crearAsignacionMutation = useMutation({
+    mutationFn: crearAsignacion,
+    onSuccess: () => {
+      toast.success('Asignacion inicial creada correctamente.')
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] })
     },
     onError: (error) => setMensajeError(obtenerMensajeError(error)),
   })
@@ -288,7 +310,7 @@ export default function ListarDocentes() {
     setDocenteDetalleId(id)
   }
 
-  async function guardarDocente(payload) {
+  async function guardarDocente(payload, asignacionInicial = null) {
     setMensajeError('')
 
     if (docenteEditando) {
@@ -296,7 +318,14 @@ export default function ListarDocentes() {
       return
     }
 
-    await crearMutation.mutateAsync(payload)
+    const respuesta = await crearMutation.mutateAsync(payload)
+
+    if (asignacionInicial && respuesta?.docente?.id) {
+      await crearAsignacionMutation.mutateAsync({
+        ...asignacionInicial,
+        docente_id: Number(respuesta.docente.id),
+      })
+    }
   }
 
   async function abrirCvPdf(docente) {
@@ -381,10 +410,15 @@ export default function ListarDocentes() {
         className="max-w-3xl"
       >
         <FormularioDocente
+          key={`${modalFormulario ? 'abierto' : 'cerrado'}-${docenteEditando?.id || 'nuevo'}`}
           docente={docenteEditando}
           onGuardar={guardarDocente}
           onCancelar={() => setModalFormulario(false)}
-          cargando={crearMutation.isPending || editarMutation.isPending}
+          cargando={crearMutation.isPending || editarMutation.isPending || crearAsignacionMutation.isPending}
+          grupos={grupos}
+          materias={materias}
+          gestiones={gestiones}
+          horarios={horarios}
         />
       </Modal>
 
