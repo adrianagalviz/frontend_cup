@@ -43,6 +43,7 @@ function DatosRol({ usuario }) {
     return (
       <>
         <FilaDato etiqueta="Profesional del area" valor={docente?.es_profesional_area === undefined ? undefined : docente.es_profesional_area ? 'Si' : 'No'} />
+        <FilaDato etiqueta="Area profesional" valor={docente?.materia_profesional?.nombre} />
         <FilaDato etiqueta="Maestria" valor={docente?.tiene_maestria === undefined ? undefined : docente.tiene_maestria ? 'Si' : 'No'} />
         <FilaDato etiqueta="Diplomado educacion superior" valor={docente?.tiene_diplomado_educacion_superior === undefined ? undefined : docente.tiene_diplomado_educacion_superior ? 'Si' : 'No'} />
         <FilaDato etiqueta="Contratado" valor={docente?.contratado === undefined ? undefined : docente.contratado ? 'Si' : 'No'} />

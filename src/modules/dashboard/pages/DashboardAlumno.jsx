@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, CalendarDays, ClipboardCheck, Copy, FileSpreadsheet, User, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -49,23 +49,6 @@ function buscarProximaClase(horarios) {
 
 function estadoPromedio(promedio) {
   return promedio?.estado_final || 'pendiente'
-}
-
-function AccesoRapido({ to, icono, titulo, descripcion }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-md border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
-    >
-      <div className="flex items-start gap-3">
-        <div className="rounded-md bg-sky-50 p-2 text-sky-700">{icono}</div>
-        <div>
-          <p className="font-semibold text-slate-950">{titulo}</p>
-          <p className="mt-1 text-sm text-slate-600">{descripcion}</p>
-        </div>
-      </div>
-    </Link>
-  )
 }
 
 function TarjetaClase({ horario, claseActiva }) {
@@ -340,20 +323,6 @@ export default function DashboardAlumno() {
       </div>
 
       <TarjetaClase horario={proximaClase} claseActiva={claseActivaQuery.data} />
-
-      <section className="grid gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-950">Accesos rapidos</h2>
-          <p className="mt-1 text-sm text-slate-600">Funciones permitidas para el rol alumno.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <AccesoRapido to="/alumno/perfil" icono={<User className="h-5 w-5" />} titulo="Perfil" descripcion="Datos personales, codigo y estado academico." />
-          <AccesoRapido to="/alumno/horarios" icono={<CalendarDays className="h-5 w-5" />} titulo="Horarios" descripcion="Materia, docente, aula, dia, turno y periodo." />
-          <AccesoRapido to="/alumno/asistencias" icono={<ClipboardCheck className="h-5 w-5" />} titulo="Asistencias" descripcion="Marcar asistencia y revisar historial." />
-          <AccesoRapido to="/alumno/examenes" icono={<BookOpen className="h-5 w-5" />} titulo="Examenes" descripcion="Rendir solo examenes habilitados por backend." />
-          <AccesoRapido to="/alumno/notas" icono={<FileSpreadsheet className="h-5 w-5" />} titulo="Notas" descripcion="Parciales, promedio y estado final." />
-        </div>
-      </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="grid gap-3">

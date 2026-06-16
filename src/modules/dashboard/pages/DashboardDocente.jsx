@@ -1,6 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, ClipboardCheck, ClipboardList, Clock, GraduationCap, User, Users } from 'lucide-react'
+import { CalendarDays, Clock, GraduationCap, User, Users } from 'lucide-react'
 import BadgeEstado from '../../../components/common/BadgeEstado'
 import Boton from '../../../components/common/Boton'
 import CardIndicador from '../../../components/common/CardIndicador'
@@ -49,23 +49,6 @@ function buscarProximaClase(horarios) {
       const periodoB = b.periodo?.numero_periodo ?? 0
       return diaA - diaB || periodoA - periodoB
     })[0]
-}
-
-function AccesoRapido({ to, icono, titulo, descripcion }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-md border border-slate-200 bg-white p-4 transition hover:border-sky-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600"
-    >
-      <div className="flex items-start gap-3">
-        <div className="rounded-md bg-sky-50 p-2 text-sky-700">{icono}</div>
-        <div>
-          <p className="font-semibold text-slate-950">{titulo}</p>
-          <p className="mt-1 text-sm text-slate-600">{descripcion}</p>
-        </div>
-      </div>
-    </Link>
-  )
 }
 
 function TarjetaClase({ horario, claseActiva }) {
@@ -210,19 +193,6 @@ export default function DashboardDocente() {
       </div>
 
       <TarjetaClase horario={proximaClase} claseActiva={claseActivaQuery.data} />
-
-      <section className="grid gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-950">Accesos rapidos</h2>
-          <p className="mt-1 text-sm text-slate-600">Funciones permitidas para el rol docente.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <AccesoRapido to="/docente/perfil" icono={<User className="h-5 w-5" />} titulo="Perfil" descripcion="Datos personales y requisitos academicos." />
-          <AccesoRapido to="/docente/horarios" icono={<CalendarDays className="h-5 w-5" />} titulo="Horarios" descripcion="Carga horaria por materia, grupo, aula y periodo." />
-          <AccesoRapido to="/docente/asistencias" icono={<ClipboardList className="h-5 w-5" />} titulo="Mi asistencia" descripcion="Marcar entrada y salida de clase." />
-          <AccesoRapido to="/docente/asistencia-alumnos" icono={<ClipboardCheck className="h-5 w-5" />} titulo="Asistencia alumnos" descripcion="Tomar asistencia y ver historial de tus grupos." />
-        </div>
-      </section>
 
       <section className="grid gap-4">
         <div>

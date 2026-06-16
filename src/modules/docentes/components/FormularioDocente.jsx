@@ -20,6 +20,7 @@ const schema = z.object({
   nombre_usuario: z.string().optional(),
   password: z.string().optional(),
   es_profesional_area: z.boolean().refine(Boolean, 'El docente debe ser profesional en el area.'),
+  materia_profesional_id: z.string().min(1, 'Debe seleccionar el area profesional del docente.'),
   tiene_maestria: z.boolean().refine(Boolean, 'El docente debe tener maestria.'),
   tiene_diplomado_educacion_superior: z.boolean().refine(Boolean, 'El docente debe tener diplomado en educacion superior.'),
   cv_pdf: z.any().optional(),
@@ -52,6 +53,7 @@ const valoresIniciales = {
   nombre_usuario: '',
   password: '',
   es_profesional_area: false,
+  materia_profesional_id: '',
   tiene_maestria: false,
   tiene_diplomado_educacion_superior: false,
   cv_pdf: undefined,
@@ -71,6 +73,7 @@ function valoresDesdeDocente(docente) {
     nombre_usuario: docente.usuario?.nombre_usuario || '',
     password: '',
     es_profesional_area: Boolean(docente.es_profesional_area),
+    materia_profesional_id: docente.materia_profesional?.id ? String(docente.materia_profesional.id) : '',
     tiene_maestria: Boolean(docente.tiene_maestria),
     tiene_diplomado_educacion_superior: Boolean(docente.tiene_diplomado_educacion_superior),
     cv_pdf: undefined,
@@ -95,6 +98,7 @@ function prepararPayload(values) {
     celular: values.celular,
     correo: values.correo,
     es_profesional_area: values.es_profesional_area,
+    materia_profesional_id: values.materia_profesional_id,
     tiene_maestria: values.tiene_maestria,
     tiene_diplomado_educacion_superior: values.tiene_diplomado_educacion_superior,
   }
@@ -256,6 +260,14 @@ export default function FormularioDocente({
 
       <div className="grid gap-3">
         <CampoCheckbox label="Profesional en el area" name="es_profesional_area" register={register} error={errors.es_profesional_area} />
+        <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+          <span>Area profesional *</span>
+          <Select error={errors.materia_profesional_id} {...register('materia_profesional_id')}>
+            <option value="">Seleccionar</option>
+            {materias.map((materia) => <option key={materia.id} value={materia.id}>{materia.nombre}</option>)}
+          </Select>
+          {errors.materia_profesional_id ? <span className="text-xs font-normal text-red-600">{errors.materia_profesional_id.message}</span> : null}
+        </label>
         <CampoCheckbox label="Maestria" name="tiene_maestria" register={register} error={errors.tiene_maestria} />
         <CampoCheckbox label="Diplomado en educacion superior" name="tiene_diplomado_educacion_superior" register={register} error={errors.tiene_diplomado_educacion_superior} />
       </div>

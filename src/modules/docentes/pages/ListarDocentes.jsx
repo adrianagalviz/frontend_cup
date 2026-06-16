@@ -82,6 +82,7 @@ function DetalleDocente({ docente, onVerCv, onDescargarCv }) {
           <FilaDato etiqueta="Celular" valor={docente.persona?.celular} />
           <FilaDato etiqueta="Usuario" valor={docente.usuario?.nombre_usuario} />
           <FilaDato etiqueta="Profesional en el area" valor={siNo(docente.es_profesional_area)} />
+          <FilaDato etiqueta="Area profesional" valor={docente.materia_profesional?.nombre} />
           <FilaDato etiqueta="Maestria" valor={siNo(docente.tiene_maestria)} />
           <FilaDato etiqueta="Diplomado educacion superior" valor={siNo(docente.tiene_diplomado_educacion_superior)} />
         </dl>
@@ -248,6 +249,7 @@ export default function ListarDocentes() {
       cell: ({ row }) => (
         <div className="grid gap-1 text-xs">
           <span>Profesional: {siNo(row.original.es_profesional_area)}</span>
+          <span>Area: {row.original.materia_profesional?.nombre || 'Sin area'}</span>
           <span>Maestria: {siNo(row.original.tiene_maestria)}</span>
           <span>Diplomado: {siNo(row.original.tiene_diplomado_educacion_superior)}</span>
         </div>
