@@ -13,7 +13,7 @@ export default function PagoCancelado() {
           <XCircle className="h-5 w-5" />
           Pago cancelado o no completado
         </div>
-        <p className="mt-1 text-sm">El frontend consulta el estado real al backend antes de permitir registrar el pago temporal.</p>
+        <p className="mt-1 text-sm">No se completo el pago en Stripe. Puedes volver a iniciar Checkout si el estado sigue pendiente.</p>
       </div>
       <EstadoPagoPostulante postulanteId={postulanteId} titulo="Estado despues del retorno" />
     </div>

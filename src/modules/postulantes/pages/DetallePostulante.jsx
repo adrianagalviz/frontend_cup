@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { CheckCircle2, Copy, CreditCard, Edit, GraduationCap, XCircle } from 'lucide-react'
+import { CheckCircle2, Copy, Edit, GraduationCap, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import BadgeEstado from '../../../components/common/BadgeEstado'
@@ -78,7 +78,7 @@ export default function DetallePostulante() {
   const pagoConfirmado = postulante?.pago?.estado_pago === 'pagado' || postulante?.estado_pago === 'pagado'
   const pagoValidado = Boolean(postulante?.pago?.validado_por_usuario_id && postulante?.pago?.validado_en)
   const yaEsAlumno = postulante?.estado_postulante === 'habilitado_alumno'
-  const puedeConvertir = requisitosAprobados && pagoConfirmado && pagoValidado && !yaEsAlumno
+  const puedeConvertir = requisitosAprobados && !yaEsAlumno
   const codigoAlumnoVisible = alumnoConvertido?.codigo_alumno || postulante?.alumno?.codigo_alumno || postulante?.alumno?.codigo_acceso
   const puedeValidar = Boolean(documento?.cloudinary_url)
 
@@ -138,18 +138,10 @@ export default function DetallePostulante() {
         <div className="md:col-span-3">
           <div className={`rounded-md border p-3 text-sm ${requisitosAprobados ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
             {requisitosAprobados
-              ? 'Los requisitos estan aprobados. Si el pago ya fue registrado, administracion debe validar el pago antes de convertir.'
+              ? 'Los requisitos estan aprobados. Puedes dar acceso como alumno; el pago pendiente se completara desde su perfil.'
               : 'El administrador debe aprobar los requisitos antes de convertir el postulante en alumno.'}
           </div>
         </div>
-        {requisitosAprobados ? (
-          <div className="md:col-span-3">
-            <Link to={`/pagos/postulante/${id}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800">
-              <CreditCard className="h-4 w-4" />
-              Abrir vista de pago del postulante
-            </Link>
-          </div>
-        ) : null}
       </section>
 
       <section className="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
@@ -187,8 +179,8 @@ export default function DetallePostulante() {
 
         <div className={`rounded-md border p-3 text-sm ${puedeConvertir ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
           {puedeConvertir
-            ? 'El postulante cumple requisitos, tiene pago registrado y validacion administrativa aprobada.'
-            : 'Para convertir debe tener requisitos aprobados, pago registrado y validacion administrativa aceptada por el administrador.'}
+            ? 'El postulante cumple requisitos. Al convertirlo, podra iniciar sesion como alumno y completar el pago desde su perfil.'
+            : 'Para convertir debe tener requisitos aprobados y no haber sido convertido previamente.'}
         </div>
 
         {codigoAlumnoVisible ? (

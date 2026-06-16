@@ -10,7 +10,7 @@ import MensajeError from '../../../components/common/MensajeError'
 import CampoPassword from '../../../components/forms/CampoPassword'
 import CampoTexto from '../../../components/forms/CampoTexto'
 import { useAuth } from '../../../hooks/useAuth'
-import { obtenerRutaPorRol, ROLES } from '../../../lib/auth'
+import { obtenerRutaInicialUsuario, ROLES } from '../../../lib/auth'
 import { aplicarErroresFormulario, obtenerMensajeError } from '../../../lib/errores'
 
 const schema = z.object({
@@ -58,7 +58,7 @@ export default function Login() {
   })
 
   if (autenticado) {
-    return <Navigate to={obtenerRutaPorRol(usuario?.rol)} replace />
+    return <Navigate to={obtenerRutaInicialUsuario(usuario)} replace />
   }
 
   const tipoLogin = watch('tipo_login')
@@ -85,7 +85,7 @@ export default function Login() {
         return
       }
 
-      navigate(obtenerRutaPorRol(rol), { replace: true })
+      navigate(obtenerRutaInicialUsuario(datos?.usuario), { replace: true })
     } catch (err) {
       aplicarErroresFormulario(err, setErrorFormulario)
       setMensajeError(obtenerMensajeError(err))

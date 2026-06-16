@@ -11,6 +11,7 @@ import { useAuth } from '../../../hooks/useAuth'
 import { obtenerMensajeError } from '../../../lib/errores'
 import { subirCvDocentePerfil } from '../../../services/auth.service'
 import { descargarCvDocente } from '../../../services/docentes.service'
+import EstadoPagoPostulante from '../../pagos/components/EstadoPagoPostulante'
 
 function FilaDato({ etiqueta, valor }) {
   if (valor === null || valor === undefined || valor === '') return null
@@ -56,7 +57,10 @@ function DatosRol({ usuario }) {
       <>
         <CodigoAlumno codigo={alumno?.codigo_alumno || usuario?.codigo_acceso} />
         <FilaDato etiqueta="Estado academico" valor={alumno?.estado_academico} />
-        <FilaDato etiqueta="Gestion academica" valor={alumno?.gestion_academica_id} />
+        <FilaDato etiqueta="Gestion academica" valor={alumno?.gestion_academica?.nombre || alumno?.gestion_academica_id} />
+        <FilaDato etiqueta="Requisitos" valor={alumno?.postulante?.estado_requisitos} />
+        <FilaDato etiqueta="Pago" valor={alumno?.postulante?.estado_pago} />
+        <FilaDato etiqueta="Accesos alumno" valor={alumno?.accesos_habilitados ? 'Habilitados' : 'Pendientes por pago'} />
       </>
     )
   }
@@ -195,6 +199,8 @@ export default function PerfilAutenticado() {
 
   const perfil = data || usuario
   const persona = perfil?.persona || {}
+  const alumno = perfil?.datos_rol?.alumno
+  const pagoPendienteAlumno = perfil?.rol === 'alumno' && alumno?.postulante?.id && !alumno?.accesos_habilitados
 
   return (
     <div className="grid gap-5">
@@ -238,6 +244,15 @@ export default function PerfilAutenticado() {
       </section>
 
       {perfil?.rol === 'docente' ? <CvDocente docente={perfil?.datos_rol?.docente} onActualizado={refrescarPerfil} /> : null}
+
+      {pagoPendienteAlumno ? (
+        <EstadoPagoPostulante
+          postulanteId={alumno.postulante.id}
+          titulo="Pago pendiente"
+          redirigirAlLoginAlPagar={false}
+          onPagoRegistrado={refrescarPerfil}
+        />
+      ) : null}
     </div>
   )
 }

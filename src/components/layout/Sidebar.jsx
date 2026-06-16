@@ -22,6 +22,8 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
+import { alumnoTieneAccesos } from '../../lib/auth'
 
 const menuPorRol = {
   administrador: [
@@ -124,7 +126,16 @@ export default function Sidebar({
   onCerrar,
   onAlternarContraido,
 }) {
+  const { usuario } = useAuth()
   const modulos = menuPorRol[rol] || []
+  const modulosVisibles = rol === 'alumno' && !alumnoTieneAccesos(usuario)
+    ? [
+        {
+          modulo: 'Inicio',
+          items: modulos.flatMap((modulo) => modulo.items).filter((item) => ['/alumno/perfil', '/alumno/configuracion'].includes(item.to)),
+        },
+      ]
+    : modulos
   const ancho = contraido ? 'lg:w-20' : 'lg:w-72'
 
   return (
@@ -155,7 +166,7 @@ export default function Sidebar({
         </div>
 
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
-          {modulos.map(({ modulo, items }) => (
+          {modulosVisibles.map(({ modulo, items }) => (
             <section key={modulo} className="space-y-1.5">
               <div className={`px-3 text-xs font-bold uppercase text-slate-400 ${contraido ? 'lg:px-0 lg:text-center' : ''}`}>
                 <span className={contraido ? 'lg:hidden' : ''}>{modulo}</span>

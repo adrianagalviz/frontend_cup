@@ -18,8 +18,24 @@ export function obtenerRutaPorRol(rol) {
   return rutas[rol] || '/acceso-denegado'
 }
 
+export function alumnoTieneAccesos(usuario) {
+  if (obtenerRolUsuario(usuario) !== ROLES.ALUMNO) return true
+
+  const alumno = usuario?.datos_rol?.alumno
+  return Boolean(alumno?.accesos_habilitados || alumno?.postulante?.estado_pago === 'pagado')
+}
+
+export function obtenerRutaInicialUsuario(usuario) {
+  const rol = obtenerRolUsuario(usuario)
+
+  if (rol === ROLES.ALUMNO && !alumnoTieneAccesos(usuario)) {
+    return '/alumno/perfil'
+  }
+
+  return obtenerRutaPorRol(rol)
+}
+
 export function rolPermitido(usuario, rolesPermitidos = []) {
   const rol = obtenerRolUsuario(usuario)
   return Boolean(rol && rolesPermitidos.includes(rol))
 }
-

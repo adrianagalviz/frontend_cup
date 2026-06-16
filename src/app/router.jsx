@@ -3,7 +3,7 @@ import AdminLayout from '../components/layout/AdminLayout'
 import AlumnoLayout from '../components/layout/AlumnoLayout'
 import AuthLayout from '../components/layout/AuthLayout'
 import DocenteLayout from '../components/layout/DocenteLayout'
-import { RedireccionPorRol, RutaPorRol, RutaProtegida } from '../components/layout/RutasProtegidas'
+import { RedireccionPorRol, RutaAlumnoConPago, RutaPorRol, RutaProtegida } from '../components/layout/RutasProtegidas'
 import AdmisionFinal from '../modules/admision/pages/AdmisionFinal'
 import DetalleAlumno from '../modules/alumnos/pages/DetalleAlumno'
 import ListarAlumnos from '../modules/alumnos/pages/ListarAlumnos'
@@ -125,13 +125,13 @@ const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <Navigate to="/alumno/dashboard" replace /> },
-      { path: 'dashboard', element: <DashboardAlumno /> },
+      { path: 'dashboard', element: <RutaAlumnoConPago><DashboardAlumno /></RutaAlumnoConPago> },
       { path: 'perfil', element: <PerfilAutenticado /> },
       { path: 'configuracion', element: <ConfiguracionVisual /> },
-      { path: 'horarios', element: <HorariosPorRol rol="alumno" /> },
-      { path: 'asistencias', element: <AsistenciaAlumnos modo="alumno" /> },
-      { path: 'examenes', element: <ExamenesAlumno /> },
-      { path: 'notas', element: <NotasPromedios modo="alumno" /> },
+      { path: 'horarios', element: <RutaAlumnoConPago><HorariosPorRol rol="alumno" /></RutaAlumnoConPago> },
+      { path: 'asistencias', element: <RutaAlumnoConPago><AsistenciaAlumnos modo="alumno" /></RutaAlumnoConPago> },
+      { path: 'examenes', element: <RutaAlumnoConPago><ExamenesAlumno /></RutaAlumnoConPago> },
+      { path: 'notas', element: <RutaAlumnoConPago><NotasPromedios modo="alumno" /></RutaAlumnoConPago> },
     ],
   },
   { path: '/acceso-denegado', element: <AccesoDenegado /> },

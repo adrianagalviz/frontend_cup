@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import Loader from '../common/Loader'
-import { obtenerRutaPorRol, rolPermitido } from '../../lib/auth'
+import { alumnoTieneAccesos, obtenerRutaInicialUsuario, rolPermitido, ROLES } from '../../lib/auth'
 import { useAuth } from '../../hooks/useAuth'
 
 export function RutaProtegida({ children }) {
@@ -22,12 +22,21 @@ export function RutaPorRol({ roles, children }) {
   return children
 }
 
+export function RutaAlumnoConPago({ children }) {
+  const { usuario } = useAuth()
+
+  if (usuario?.rol === ROLES.ALUMNO && !alumnoTieneAccesos(usuario)) {
+    return <Navigate to="/alumno/perfil" replace />
+  }
+
+  return children
+}
+
 export function RedireccionPorRol() {
   const { autenticado, usuario, validandoSesion } = useAuth()
 
   if (validandoSesion) return <Loader texto="Preparando panel..." />
   if (!autenticado) return <Navigate to="/login" replace />
 
-  return <Navigate to={obtenerRutaPorRol(usuario?.rol)} replace />
+  return <Navigate to={obtenerRutaInicialUsuario(usuario)} replace />
 }
-

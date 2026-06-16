@@ -11,12 +11,12 @@ export default function PagoExitoso() {
       <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
         <div className="flex items-center gap-2 font-semibold">
           <CheckCircle2 className="h-5 w-5" />
-          Pago registrado
+          Retorno de Stripe
         </div>
-        <p className="mt-1 text-sm">El pago temporal queda registrado en backend. Proximamente este flujo usara Stripe.</p>
+        <p className="mt-1 text-sm">Estamos verificando el pago con Stripe. Si aun aparece pendiente, espera unos segundos y actualiza el estado.</p>
       </div>
       <EstadoPagoPostulante postulanteId={postulanteId} titulo="Resultado del pago" />
-      <p className="text-sm text-slate-600">Si el pago aparece como pagado, el administrador revisara tus datos y requisitos antes de darte acceso como alumno.</p>
+      <p className="text-sm text-slate-600">Stripe confirma el pago mediante webhook; por eso puede tardar un momento en reflejarse como pagado.</p>
     </div>
   )
 }
